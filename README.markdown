@@ -13,6 +13,6 @@ For Debian and its derivatives, see [this page](http://www.nickmoeck.com/opensta
  - ensure that the database file and its parent directory are owned by the user PHP scripts run as, and that that user can read and write to the database
 file.
  - start openstatus-server and openstatus-client
-  - openstatus-server -c <config file>
-  - openstatus-client -c <config file>
+  - openstatus-server -c \<config file\>
+  - openstatus-client -c \<config file\>
   - <config file> defaults to /etc/openstatus/openstatus-[client|server].conf
