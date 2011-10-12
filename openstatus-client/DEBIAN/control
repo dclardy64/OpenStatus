@@ -1,0 +1,12 @@
+Package: openstatus-client
+Version: 0.1.0
+Section: net
+Priority: optional
+Maintainer: Nick Moeck <nick@nickmoeck.com>
+Architecture: all
+Depends: python2.6, python-setproctitle, python-configobj
+Description: OpenStatus monitoring client
+ OpenStatus is a simple program designed to make it easy for
+ system administrators to monitor multiple Linux servers.
+ OpenStatus Client runs on the systems being monitored, and
+ reports back to a server running OpenStatus Server.

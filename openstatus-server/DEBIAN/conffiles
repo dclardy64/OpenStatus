@@ -1,0 +1,3 @@
+/etc/openstatus/openstatus-server.conf
+/etc/init.d/openstatus-server
+/etc/openstatus/openstatus.db

@@ -1,0 +1,13 @@
+Package: openstatus-server
+Version: 0.1.0
+Section: net
+Priority: optional
+Maintainer: Nick Moeck <nick@nickmoeck.com>
+Architecture: all
+Depends: python2.6, python-setproctitle, python-configobj, sendmail | exim4 | courier-mta, php5, php5-sqlite
+Description: OpenStatus server monitoring system
+ OpenStatus is a simple program designed to make it easy for
+ system administrators to monitor multiple Linux servers.
+ OpenStatus Server collects data from OpenStatus Clients, displays
+ the information, and sends out email alerts when a server is down
+ or experiencing a problem.
