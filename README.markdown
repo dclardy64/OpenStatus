@@ -3,7 +3,7 @@
 OpenStatus is a server monitoring system based on [scrd](https://github.com/DimeCadmium/scrd) and nikkiii's [status page](https://github.com/nikkiii/status)
 
 ## Installation
-For Debian and its derivatives, see [this page](http://www.nickmoeck.com/openstatus/) forinstall instructions.  For other distros:
+For Debian and its derivatives, see [this page](http://www.nickmoeck.com/openstatus/) for install instructions.  For other distros:
 
  - copy the contents of openstatus-server to your server
  - copy the contents of openstatus-client to your clients
