@@ -15,4 +15,4 @@ file.
  - start openstatus-server and openstatus-client
   - openstatus-server -c \<config file\>
   - openstatus-client -c \<config file\>
-  - <config file> defaults to /etc/openstatus/openstatus-[client|server].conf
+  - \<config file\> defaults to /etc/openstatus/openstatus-[client|server].conf
