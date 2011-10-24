@@ -1,0 +1,24 @@
+openstatus-client (0.2.3) stable; urgency=low
+
+  * 
+
+ -- Nick Moeck <nick@nickmoeck.com>  {date -R}
+
+openstatus-client (0.2.2) stable; urgency=low
+
+  * Free memory fix
+
+ -- Nick Moeck <nick@nickmoeck.com>  Mon, 24 Oct 2011 05:21:57 +0000
+
+openstatus-client (0.2.1) stable; urgency=low
+
+  * Version bump to match server
+
+ -- Nick Moeck <nick@nickmoeck.com>  Sat, 22 Oct 2011 12:52:33 +0000
+
+openstatus-client (0.2.0) stable; urgency=low
+
+  * Memory usage fix - now uses output of "+/- buffers/cache" line from free -m
+  * Various interface tweaks
+
+ -- Nick Moeck <nick@nickmoeck.com>  Mon, 10 Oct 2011 03:37:20 +0000

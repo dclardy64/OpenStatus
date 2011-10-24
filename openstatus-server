@@ -1,0 +1,245 @@
+#!/usr/bin/python
+
+import socket, signal, os, sys, atexit, time, getopt, sqlite3, smtplib
+from configobj import ConfigObj, ConfigObjError
+from validate import Validator
+from time import time
+
+try:
+	import setproctitle
+	setproctitle.setproctitle('openstatus-server')
+except ImportError:
+	sys.stderr.write('setproctitle not found')
+try:       
+	import json
+except:
+	try:     
+		import simplejson as json
+	except ImportError:
+		sys.stderr.write('Could not import json module')
+		sys.exit(1)
+
+debug = False
+configfile = '/etc/openstatus/openstatus-server.conf'
+try:
+	options, remainder = getopt.getopt(sys.argv[1:], 'dc:', ['debug',])
+except getopt.GetoptError:
+	print "usage: ",sys.argv[0]," [-c configfile] [-d | --debug]"
+	sys.exit(2)
+
+for opt, args in options:
+	if opt in ('-d', '--debug'):
+		debug = True
+	elif opt in ('-c'):
+		if args in ('-d', '--debug'):
+			print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
+			sys.exit(2)
+		configfile = args
+
+# Let's make this a daemon... this is a very basic daemon fork, taken from: http://code.activestate.com/recipes/66012-fork-a-daemon-process-on-unix/#c9
+# Do the first fork
+def daemonize(stdout, stderr, stdin, pidfile, startmsg = 'OpenStatus started with pid %s' ):
+
+	try:
+		pid = os.fork()
+		if pid > 0: sys.exit(0) # Exit first parent.
+	except OSError, e:
+		sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
+		sys.exit(1)
+
+	# Decouple from parent environment.
+	os.chdir("/")
+	os.umask(0)
+	os.setsid()
+
+	# Do second fork.
+	try:
+		pid = os.fork()
+		if pid > 0: sys.exit(0) # Exit second parent.
+	except OSError, e:
+		sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
+		sys.exit(1)
+
+	# Open file descriptors and print start message
+	if not stderr: stderr = stdout
+	si = file(stdin, 'r')
+	so = file(stdout, 'a+')
+	se = file(stderr, 'a+', 0)
+	pid = str(os.getpid())
+
+	sys.stderr.write("%s using config file %s\n" % (startmsg, configfile) % pid)
+	sys.stderr.flush()
+	if pidfile: file(pidfile,'w+').write("%s\n" % pid)
+
+	# Redirect standard file descriptors.
+	# Commented becaue I'm debugging.  Should probably make a --debug option that still prints this stuff (and doesn't fork?)
+	os.dup2(si.fileno(), sys.stdin.fileno())
+	os.dup2(so.fileno(), sys.stdout.fileno())
+	os.dup2(se.fileno(), sys.stderr.fileno())
+
+def send_email(sender, receiver, subject, body):
+
+	msg = ("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" %(sender, receiver, subject, body))
+	s = smtplib.SMTP('localhost')
+	s.sendmail(sender, [receiver], msg)
+	s.quit()
+
+def alert(hostname, ip, module, level, value, setstatus = False):
+
+	# Let's insert this alert into the database
+	sql.execute('SELECT * FROM servers WHERE hostname = ?', [hostname])
+	server = sql.fetchone()
+
+	alertinfo = (server['uid'], module, level, int(time()), value, 0)
+	alertcheck = (server['uid'], module, level, int(time()-3600), 0)
+	sql.execute('SELECT * FROM alerts WHERE server_uid = ? AND module = ? AND level = ? AND alert_time > ? AND acked = ?', alertcheck)
+	alerts = 0
+	for row in sql:
+		alerts += 1
+
+	if (alerts < 1):
+		sql.execute('INSERT INTO alerts (server_uid, module, level, alert_time, value, acked) VALUES (?, ?, ?, ?, ?, ?)', alertinfo)
+		if (setstatus == True):
+			sql.execute('UPDATE servers SET status = 0 WHERE uid = ?', (server['uid'], ))
+		title = "OpenStatus alert on server %s" % hostname
+		message = "A problem was detected with a server monitored by OpenStatus.  The details are below. \n\n\nServer: %s\nModule: %s\nAlert Level: %s\nValue: %s" % (hostname, module, level, value)
+		send_email(config['server']['email_from'], config['warning']['email'], title, message)
+
+def sigHdl(signum, frm):
+
+	if signum == signal.SIGTERM:
+		conn.close()
+		os._exit(0)
+
+def checkServers():
+
+	# Let's check each server in the database to see when we last heard from it.
+	sql.execute('SELECT * FROM servers WHERE disabled = 0')
+	for row in sql:
+		if (row['time'] < (int(time()) - 300)):
+			alert(row['hostname'], '0.0.0.0', 'Server Status', 'Critical', 'Down', True)
+
+def getConfig():
+
+	global config, configfile
+
+	cfg = """
+	[server]
+	listen_ip = ip_addr(default='0.0.0.0')
+	port = integer(min=1, max=65535, default=12999)
+	email_from = string(default='root@localhost')
+	[warning]
+	email = string(default='root@localhost')
+	[critical]
+	email = string(default='root@localhost')
+	"""
+	try:
+		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+	except (ConfigObjError, IOError), e:
+		sys.stderr.write('%s\n' % (e))
+		try:
+			configfile = '/etc/openstatus/openstatus-server.conf'
+			config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+		except (ConfigObjError, IOError), e:
+			sys.stderr.write('%s\n' % (e))
+			sys.stderr.write('Exiting...\n')
+			sys.exit(3)
+	validator = Validator()
+	result = config.validate(validator)
+	if result != True:
+		sys.stderr.write('Config file validation failed!')
+		sys.exit(1)
+
+def dbConnect():
+
+	db = sqlite3.connect('/etc/openstatus/openstatus.db', check_same_thread = False, isolation_level=None)
+	db.row_factory=sqlite3.Row
+	global sql
+	sql = db.cursor()
+
+def main():
+
+	getConfig()
+	dbConnect()
+
+	TCP_IP = config['server']['listen_ip']
+	TCP_PORT = int(config['server']['port'])
+	BUFFER_SIZE = 1024
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	try: # Bind to our socket. If we can't, let's go out gracefully
+		s.bind((TCP_IP, TCP_PORT))
+	except socket.error:
+		sys.stderr.write('Could not bind to %s:%d\n' % (TCP_IP, TCP_PORT))
+	else:
+		s.listen(1)
+		while 1:
+			conn, addr = s.accept()
+			data = ""
+
+			while 1:
+				info = conn.recv(BUFFER_SIZE)
+				if not info:
+					break
+				else:
+					data += info
+
+			# This huge block of indented try except else statements could probably be done better
+			try: # Make sure it's actually json that got sent
+				data = json.loads(data)
+			except ValueError:
+				sys.stderr.write('JSON error from %s\n' % (addr[0]))
+			else:
+				try: # Check that there's a hostname defined
+					host = data['hostname']
+				except KeyError:
+					sys.stderr.write('No hostname in json from %s\n' % (addr[0]))
+				else:
+					try: # Let's see if we have a server with this hostname
+						sql.execute('SELECT * FROM servers WHERE hostname = ?', [data['hostname']])
+					except sqlite3.OperationalError, msg:
+						sys.stderr.write(msg, "\n")
+					else:
+						server = sql.fetchone()
+						if (server != None):
+							#if (1==1):
+							if (addr[0] == server['ip']): # Make sure it's the right IP for the hostname, otherwise, ignore everything
+								ins = (int(time()), 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
+								sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ? WHERE uid = ?', ins)
+
+								for proc in data['procs']:
+									upd = (data['procs'][proc]['status'], server['uid'], data['procs'][proc]['name'])
+									sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
+									if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, "Processes", "Warning", data['procs'][proc]['name'])
+									elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, "Processes", "Critical", data['procs'][proc]['name'])
+
+								if data['ram']['status'] != 0:
+									if data['ram']['status'] == 1: alert(server['hostname'], addr, 'Memory', 'Warning', data['ram']['used'])
+									elif data['ram']['status'] == 2: alert(server['hostname'], addr, 'Memory', 'Critical', data['ram']['used'])
+								#else:
+									#alert(server['hostname'], addr, 'Memory', 'OK', data['ram']['used'])
+
+								if data['disk']['total']['status'] != 0:
+									diskpercent = int(server['disk']['total']['used']) / int(server['disk']['total']['avail'])
+									if data['disk']['total']['status'] == 1: alert(server['hostname'], addr, 'Disk', 'Warning', diskpercent)
+									elif data['disk']['total']['status'] == 2: alert(server['hostname'], addr, 'Disk', 'Critial', diskpercent)
+								if data['uptime']['status'] != 0:
+									if data['uptime']['status'] == 1: alert(server['hostname'], addr, 'Load', 'Warning', data['uptime']['load1'])
+									elif data['uptime']['status'] == 2: alert(server['hostname'], addr, 'Load', 'Critical', data['uptime']['load1'])
+
+								# This should be done on a timer, but if I do that, I have to use another thread, which more than doubles the memory usage.
+								# So, instead, I'm going to do it whenever any other server updates.
+								checkServers()
+		conn.close()
+
+if __name__ == "__main__":
+
+	signal.signal(signal.SIGTERM, sigHdl)
+	signal.signal(signal.SIGHUP, sigHdl)
+	signal.signal(signal.SIGINT, sigHdl)
+	if debug == False:
+		daemonize('/var/log/openstatus-server.log', '/var/log/openstatus-server.log', '/dev/null', '/var/run/openstatus-server.pid')
+		main()
+	elif debug == True:
+		sys.stderr.write("OpenStatus started in debug mode with PID %s using config file %s\n" % (os.getpid(), configfile))
+		main()

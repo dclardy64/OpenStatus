@@ -1,0 +1,261 @@
+#!/usr/bin/python
+import socket, select, signal, os, sys, atexit, re, getopt, time
+from configobj import ConfigObj, ConfigObjError
+from validate import Validator
+
+try:
+	import setproctitle
+	setproctitle.setproctitle('openstatus-client')
+except ImportError:
+	sys.stderr.write('setprotitle not found')
+try:
+	import json
+except:
+	try:
+		import simplejson as json
+	except ImportError:
+		sys.stderr.write('Could not import json module')
+		sys.exit(1)
+
+debug = False
+configfile = '/etc/openstatus/openstatus-client.conf'
+try:
+	options, remainder = getopt.getopt(sys.argv[1:], 'dc:', ['debug',])
+except getopt.GetoptError:
+	print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
+	sys.exit(2)
+
+for opt, args in options:
+	if opt in ('-d', '--debug'):
+		debug = True
+	elif opt in ('-c'):
+		if args in ('-d', '--debug'):
+			print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
+			sys.exit(2)
+		configfile = args
+
+# Let's make this a daemon... this is a very basic daemon fork, taken from: http://code.activestate.com/recipes/66012-fork-a-daemon-process-on-unix/#c9
+# Do the first fork
+def daemonize(stdout, stderr, stdin, pidfile, startmsg = "Started with PID %s"):
+
+	try:
+		pid = os.fork()
+		if pid > 0: sys.exit(0) # Exit first parent.
+	except OSError, e:
+		sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
+		sys.exit(1)
+
+	# Decouple from parent environment.
+	os.chdir("/")
+	os.umask(0)
+	os.setsid()
+
+	# Do second fork.
+	try:
+		pid = os.fork()
+		if pid > 0: sys.exit(0) # Exit second parent.
+	except OSError, e:
+		sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
+		sys.exit(1)
+
+	# Open file descriptors and print start message
+	if not stderr: stderr = stdout
+	# We don't need to read from stdin, do we?
+	si = file(stdin, 'r')
+	so = file(stdout, 'a+')
+	se = file(stderr, 'a+', 0)
+	pid = str(os.getpid())
+	sys.stderr.write("\n%s\n" % startmsg % pid)
+	sys.stderr.flush()
+	if pidfile: file(pidfile,'w+').write("%s\n" % pid)
+
+	# Redirect standard file descriptors.
+	# Commented because I'm debugging.  Should probably make a --debug option or something that writes these out (and doesn't fork?)
+	os.dup2(si.fileno(), sys.stdin.fileno())
+	os.dup2(so.fileno(), sys.stdout.fileno())
+	os.dup2(se.fileno(), sys.stderr.fileno())
+
+def checkProcs():
+
+	procs = []
+	for section in configprocs.sections:
+		procs.append({'name': section, 'proc': configprocs[section]['proc'], 'level': configprocs[section]['level']})
+
+	# Get list of processes and process it
+	rp = os.popen("/bin/ps ax -o command=")
+	plines = rp.readlines()
+	lines = []
+	procstatus = {}
+	for l in plines:
+
+		# Output of `ps ax -o command=` contains the full path for some things, and the command line args, so we need to get the basename.
+		# There's a : stuck on the end of some stuff, like nginx, so we have to get rid of that too
+		lines.append(os.path.basename((l.strip().split(' '))[0]).replace(':', ''))
+		for pn in procs:
+			if pn['proc'] in lines:
+				procstatus[pn['name']] = { 'name': pn['name'], 'status': 0 }
+			else:
+				if pn['level'] == "warn": procstatus[pn['name']] = { 'name': pn['name'], 'status': 1 }
+				elif pn['level'] == "critical": procstatus[pn['name']] = { 'name': pn['name'], 'status': 2 }
+	return procstatus
+
+def getUptime():
+
+	rp = os.popen("/usr/bin/uptime")
+	line = rp.readline()
+	sects = line.split(', ', 2)
+	timeuptime = sects[0]
+	textload = sects[2]
+	uptime = (timeuptime.split('up '))[1].strip()
+	loads = (textload.split(': '))[1].split(', ')
+	load1 = float(loads[0].strip())
+	load5 = float(loads[1].strip())
+	load15 = float(loads[2].strip())
+	status = 0
+	if (load1 > config['load']['warning']): status += 1
+	if (load1 > config['load']['critical']): status += 1
+	return {'uptime': uptime, 'load1': load1, 'load5': load5, 'load15': load15, 'status': status}
+
+def getMem():
+
+	rp = os.popen("/usr/bin/free -m")
+	rp.readline()
+	line = rp.readline()
+	words1 = line.split(' ')
+	words = []
+	for w in words1:
+		if w != '': words.append(w)
+	total = int(words[1])
+	bufcac = int(words[5])+int(words[6])
+	line2 = rp.readline()
+	words2 = line2.split(' ')
+	words3 = []
+	for b in words2:
+		if b != '': words3.append(b)
+
+	free = int(words3[3])
+	used = int(words3[2])
+	status = 0
+	if (used > int(config['memory']['warning'])): status += 1
+	if (used > int(config['memory']['critical'])): status += 1
+	return {'used': used, 'free': free, 'total': total, 'bufcac': bufcac, 'status': status}
+
+def getDisk():
+
+	dics = {'single': [], 'total': {'avail': 0, 'used': 0, 'total': 0}}
+	last = []
+	rp = os.popen("/bin/df -TP")
+	rp.readline()
+	lines = rp.readlines()
+	for l in lines:
+		m = re.match(r"(.+?)\s+([\w\-]+)\s+([\d.]+\w?)\s+([0-9.]+\w?)\s+([0-9.]+\w?)\s+(?:\d+%)\s*(.*)", l).groups()
+		# TYPE:FS:MP:TOTAL:USED:AVAIL
+		dics['single'].append({'type': m[1], 'fs': m[0], 'mount': m[5], 'total': int(m[2]), 'used': int(m[3]), 'avail': int(m[4])})
+	for item in dics['single']:
+		dics['total']['total'] += item['total']
+		dics['total']['used'] += item['used']
+		dics['total']['avail'] += item['avail']
+	status = 0
+	if ((int(dics['total']['used'])/int(dics['total']['avail'])) > config['disk']['warning']): status += 1
+	if ((int(dics['total']['used'])/int(dics['total']['avail'])) > config['disk']['critical']): status += 1
+	dics['total']['status'] = status
+	return dics
+
+def getHostname():
+	rp = os.popen("/bin/hostname")
+	line = rp.readline()
+	return line.strip()
+
+def getIPs():
+	ary = []
+	rp = os.popen("/sbin/ifconfig | grep 'inet addr:' | grep -v '127.0.0.1' | cut -d: -f2 | awk '{print $1}'")
+	lines = rp.readlines()
+	for line in lines:
+		ip = line.strip()
+		host = socket.getfqdn(ip)
+		ary.append({'ip': ip, 'host': host})
+	return ary
+
+def getWho():
+	users = {}
+	rp = os.popen("/usr/bin/who -q")
+	line = rp.readline()
+	words = line.strip().split(' ')
+	for v in words:
+		try: users[v] += 1
+		except KeyError: users[v] = 1
+	return users
+
+def getConfig():
+
+	global config, configfile
+
+	cfg = """
+	[server]
+	ip = ip_addr(default='127.0.0.1')
+	port = integer(min=1, max=65535, default=12999)
+	[misc]
+	interval = integer(min=1, default=60)
+	[load]
+	warning = float(min=1, default=1)
+	critical = float(min=2, default=2)
+	[memory]
+	warning = integer(min=0, default=512)
+	critical = integer(min=0, default=1024)
+	[disk]
+	warning = integer(min=0, max=100, default=80)
+	critical = integer(min=0, max=100, default=90)
+	[critical]
+	email = string(default='root@localhost')
+	"""
+	try:
+		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+	except (ConfigObjError, IOError), e:
+		sys.stderr.write('%s\n' % (e))
+		try:
+			configfile = '/etc/openstatus/openstatus-client.conf'
+			config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+		except (ConfigObjError, IOError), e:
+			sys.stderr.write('%s\n' % (e))
+			sys.stderr.write('Exiting...\n')
+			sys.exit(3)
+	validator = Validator()
+	result = config.validate(validator)
+	if result != True:
+		sys.stderr.write('Config file validation failed!')
+		sys.exit(1)
+
+
+def main():
+
+	getConfig()
+	global configprocs
+	configprocs = config['processes']
+
+	while 1:
+		output = {}
+		#output['hostname'] = getHostname()
+		output['hostname'] = getHostname()
+		output['ips'] = getIPs()
+		output['who'] = getWho()
+		output['procs'] = checkProcs()
+		output['uptime'] = getUptime()
+		output['ram'] = getMem()
+		output['disk'] = getDisk()
+		try:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((config['server']['ip'], int(config['server']['port'])))
+			s.send(json.dumps(output))
+			s.close()
+		except socket.error, (errno, strerror):
+			sys.stderr.write('Could not connect to server: %s' % (strerror))
+		time.sleep(float(config['misc']['interval']))
+
+if __name__ == "__main__":
+
+	if debug == False:
+		daemonize('/var/log/openstatus-client.log', '/var/log/openstatus-client.log', '/dev/null', '/var/run/openstatus-client.pid')
+		main()
+	elif debug == True:
+		sys.stderr.write("OpenStatus client started in debug mode with PID %s using config file %s\n" % (os.getpid(), configfile))
+		main()

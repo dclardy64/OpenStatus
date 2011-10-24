@@ -1,0 +1,36 @@
+openstatus-server (0.2.3) stable; urgency=low
+
+  *
+
+ -- Nick Moeck <nick@nickmoeck.com>  {date -R}
+
+openstatus-server (0.2.2) stable; urgency=low
+
+  * Free memory fix             
+
+ -- Nick Moeck <nick@nickmoeck.com>  Mon, 24 Oct 2011 05:21:57 +0000
+
+openstatus-server (0.2.1) stable; urgency=low
+
+  * Fixed bug that caused "Last Updated" to show for only the first server in
+    the list
+
+ -- Nick Moeck <nick@nickmoeck.com>  Sat, 22 Oct 2011 12:52:33 +0000
+
+openstatus-server (0.2.0) stable; urgency=low
+
+  * Changed format of Services list in web interface
+  * Added the ability to delete servers from the web interface
+  * Added the ability to delete services from the web interface
+  * Memory usage fix - now uses output of "+/- buffers/cache" line from free -m
+  * Condensed code a bit
+  * init script fixed.  It should work properly now in all cases
+
+ -- Nick Moeck <nick@nickmoeck.com>  Sat, 22 Oct 2011 08:11:09 +0000
+
+
+openstatus-server (0.1.0) stable; urgency=low
+
+  * Initial release.
+
+ -- Nick Moeck <nick@nickmoeck.com>  Mon, 10 Oct 2011 03:37:20 +0000
