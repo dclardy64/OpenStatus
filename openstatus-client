@@ -1,20 +1,30 @@
 #!/usr/bin/python
-import socket, select, signal, os, sys, atexit, re, getopt, time
+import socket, select, signal, os, sys, atexit, re, getopt, time, logging, commands
 from configobj import ConfigObj, ConfigObjError
 from validate import Validator
+
+logger = logging.getLogger('openstatus-client')
+hdlr = logging.FileHandler('/var/log/openstatus-client.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr) 
+logger.setLevel(logging.INFO)
+
+ch  = logging.StreamHandler()
+logger.addHandler(ch)
 
 try:
 	import setproctitle
 	setproctitle.setproctitle('openstatus-client')
 except ImportError:
-	sys.stderr.write('setprotitle not found')
+	logger.warning('setprotitle module not found')
 try:
 	import json
 except:
 	try:
 		import simplejson as json
 	except ImportError:
-		sys.stderr.write('Could not import json module')
+		logger.error('Could not import json module')
 		sys.exit(1)
 
 debug = False
@@ -34,6 +44,9 @@ for opt, args in options:
 			sys.exit(2)
 		configfile = args
 
+if debug == True:
+	logger.setLevel(logging.DEBUG)
+
 # Let's make this a daemon... this is a very basic daemon fork, taken from: http://code.activestate.com/recipes/66012-fork-a-daemon-process-on-unix/#c9
 # Do the first fork
 def daemonize(stdout, stderr, stdin, pidfile, startmsg = "Started with PID %s"):
@@ -42,11 +55,11 @@ def daemonize(stdout, stderr, stdin, pidfile, startmsg = "Started with PID %s"):
 		pid = os.fork()
 		if pid > 0: sys.exit(0) # Exit first parent.
 	except OSError, e:
-		sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
+		logger.error("fork #1 failed: (%d) %s" % (e.errno, e.strerror))
 		sys.exit(1)
 
 	# Decouple from parent environment.
-	os.chdir("/")
+	# os.chdir("/") # I don't think we need to do this - it probably breaks using relative paths with the -c switch
 	os.umask(0)
 	os.setsid()
 
@@ -55,7 +68,7 @@ def daemonize(stdout, stderr, stdin, pidfile, startmsg = "Started with PID %s"):
 		pid = os.fork()
 		if pid > 0: sys.exit(0) # Exit second parent.
 	except OSError, e:
-		sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
+		logger.error("fork #2 failed: (%d) %s" % (e.errno, e.strerror))
 		sys.exit(1)
 
 	# Open file descriptors and print start message
@@ -65,15 +78,31 @@ def daemonize(stdout, stderr, stdin, pidfile, startmsg = "Started with PID %s"):
 	so = file(stdout, 'a+')
 	se = file(stderr, 'a+', 0)
 	pid = str(os.getpid())
-	sys.stderr.write("\n%s\n" % startmsg % pid)
-	sys.stderr.flush()
-	if pidfile: file(pidfile,'w+').write("%s\n" % pid)
-
+	logger.info("%s" % startmsg % pid)
+	if pidfile: file(pidfile,'w+').write("%s" % pid)
+	if debug == False:
+		logger.removeHandler(ch)
 	# Redirect standard file descriptors.
-	# Commented because I'm debugging.  Should probably make a --debug option or something that writes these out (and doesn't fork?)
 	os.dup2(si.fileno(), sys.stdin.fileno())
 	os.dup2(so.fileno(), sys.stdout.fileno())
 	os.dup2(se.fileno(), sys.stderr.fileno())
+
+def sigHdl(signum, frm):
+
+	if signum == signal.SIGTERM:
+		logger.critical('Received SIGTERM... Exiting.')
+		try:
+			s.close()
+		except:
+			logger.debug('No connection to close')
+		os._exit(0)
+	else:
+		logger.critical('Received signal %s... Exiting.' % (signum))
+		try:
+			s.close()
+		except:
+			logger.debug('No connection to close')
+		os._exit(0)
 
 def checkProcs():
 
@@ -99,6 +128,52 @@ def checkProcs():
 				elif pn['level'] == "critical": procstatus[pn['name']] = { 'name': pn['name'], 'status': 2 }
 	return procstatus
 
+
+def checkCommands():
+	
+	coms = []
+	comstatus = {}
+	for section in configcommands.sections:
+		if configcommands[section]['type'] == 'integer':
+			coms.append({'name': section, 'command': configcommands[section]['command'], 'type': configcommands[section]['type'], 'warning': configcommands[section]['warning'], 'critical': configcommands[section]['critical']})
+		else:
+			coms.append({'name': section, 'command': configcommands[section]['command'], 'type': configcommands[section]['type'], 'level': configcommands[section]['level'], 'string' : configcommands[section]['string']})
+	for com in coms:
+		logger.debug('Running command: %s' % com['command'])
+		co = commands.getoutput(str(com['command']))
+		if com['type'] == 'integer':
+			# Check integer values
+			cstatus = 0
+			if co > com['warning']:
+				cstatus += 1;
+			if co > com['critical']:
+				cstatus += 1;
+			comstatus[com['name']] = { 'name' : com['name'], 'status': cstatus, 'value' : co }
+		elif com['type'] == 'string':
+			# Check if string is in output
+			cstatus = 0
+			if com['string'] in co:
+				pass
+			else:
+				if com['level'] == 'critical':
+					cstatus = 2
+				else:
+					cstatus = 1
+			comstatus[com['name']] = { 'name' : com['name'], 'status': cstatus, 'value' : 0 }
+		elif com['type'] == 'notstring':
+			# Check if string is NOT in output
+			# Check if string is in output
+			cstatus = 0
+			if com['string'] in co:
+				if com['level'] == 'critical':
+					cstatus = 2
+				else:
+					cstatus = 1
+			else:
+				pass
+			comstatus[com['name']] = { 'name' : com['name'], 'status': cstatus, 'value' : 0 }
+	return comstatus
+					
 def getUptime():
 
 	rp = os.popen("/usr/bin/uptime")
@@ -211,51 +286,66 @@ def getConfig():
 	try:
 		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
 	except (ConfigObjError, IOError), e:
-		sys.stderr.write('%s\n' % (e))
+		logger.error('%s' % (e))
 		try:
 			configfile = '/etc/openstatus/openstatus-client.conf'
 			config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
 		except (ConfigObjError, IOError), e:
-			sys.stderr.write('%s\n' % (e))
-			sys.stderr.write('Exiting...\n')
+			logger.error('%s' % (e))
+			logger.error('Exiting...')
 			sys.exit(3)
 	validator = Validator()
 	result = config.validate(validator)
 	if result != True:
-		sys.stderr.write('Config file validation failed!')
+		logger.error('Config file validation failed!')
 		sys.exit(1)
 
 
 def main():
 
 	getConfig()
-	global configprocs
-	configprocs = config['processes']
-
+	global configprocs, configcommands
+	if "processes" in config:
+		configprocs = config['processes']
+	else:
+		logger.info('Not monitoring any processes')
+	if "commands" in config:
+		configcommands = config['commands']
+	else:
+		logger.info('Not monitoring any commands')
 	while 1:
 		output = {}
 		#output['hostname'] = getHostname()
 		output['hostname'] = getHostname()
 		output['ips'] = getIPs()
 		output['who'] = getWho()
-		output['procs'] = checkProcs()
+		if "commands" in config:
+			output['procs'] = checkProcs()
 		output['uptime'] = getUptime()
 		output['ram'] = getMem()
 		output['disk'] = getDisk()
+		if "commands" in config:
+			output['commands'] = checkCommands()
+
 		try:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((config['server']['ip'], int(config['server']['port'])))
-			s.send(json.dumps(output))
+			s.sendall(json.dumps(output))
+			logger.debug("JSON sent: %s", (json.dumps(output)))
 			s.close()
 		except socket.error, (errno, strerror):
-			sys.stderr.write('Could not connect to server: %s' % (strerror))
+			logger.warning('Could not connect to server %s:%d: %s' % (config['server']['ip'], config['server']['port'], strerror))
 		time.sleep(float(config['misc']['interval']))
 
 if __name__ == "__main__":
+
+	signal.signal(signal.SIGTERM, sigHdl)
+	signal.signal(signal.SIGHUP, sigHdl)
+	signal.signal(signal.SIGINT, sigHdl)
 
 	if debug == False:
 		daemonize('/var/log/openstatus-client.log', '/var/log/openstatus-client.log', '/dev/null', '/var/run/openstatus-client.pid')
 		main()
 	elif debug == True:
-		sys.stderr.write("OpenStatus client started in debug mode with PID %s using config file %s\n" % (os.getpid(), configfile))
+		logger.info("OpenStatus client started in debug mode with PID %s using config file %s" % (os.getpid(), configfile))
 		main()

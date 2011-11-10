@@ -169,9 +169,8 @@ a:link, a:active, a:visited {
 	text-align:center;
 	padding:2px 5px;
 	margin: 2px 5px 2px 0px;
-
 }
-.service-down {
+.service-critical {
 	background-color: red;
 	color: black;
 	font-weight: bold;
@@ -179,6 +178,19 @@ a:link, a:active, a:visited {
 	border-radius:5px;
 	text-align:center;
 	padding:2px 5px;
-
 }
-
+.service-warning {
+	background-color: yellow;
+	-moz-border-radius:5px;
+	border-radius:5px;
+	text-align:center;
+	padding:2px 5px;
+}
+.service-unknown {
+	background-color: #CCCCCC;
+	color: #666666;
+	-moz-border-radius:5px;
+	border-radius:5px;
+	text-align:center;
+	padding:2px 5px;
+}

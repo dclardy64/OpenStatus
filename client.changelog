@@ -1,8 +1,11 @@
-openstatus-client (0.2.3) stable; urgency=low
+openstatus-client (0.3.0) stable; urgency=low
 
-  * 
+  * Added the ability to check the output of specific commands
+  * Better logging
+  * Better debug mode
+  * No longer crashes if [processes] section is missing
 
- -- Nick Moeck <nick@nickmoeck.com>  {date -R}
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 10 Nov 2011 06:29:55 +0000
 
 openstatus-client (0.2.2) stable; urgency=low
 

@@ -61,7 +61,7 @@ if ($auth === true) {
 			<tr><th colspan="5">Servers</th></tr>
 			<tr>
 				<th style="width: 25px">UID</th>
-				<th style="width: 100px">Hostname/IP</th>
+				<th style="width: 100px">Name</th>
 				<th style="width: 150px">Services</th>
 				<th>Notes</th>
 				<th style="width: 100px">Actions</th>
@@ -92,7 +92,7 @@ if ($auth === true) {
 		<thead>
 			<tr><th colspan="2">Add Server</th></tr>
 			<tr>
-				<th>Hostname</th>
+				<th>Name</th>
 				<th>IP</th>
 			</tr>
 		</thead>

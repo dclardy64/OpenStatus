@@ -1,8 +1,12 @@
 openstatus-server (0.2.3) stable; urgency=low
 
-  *
+  * Added the ability to monitor output of specific commands
+  * Better logging
+  * Better debug mode
+  * "Services" line not shown in web interface if no services are monitored
+  * No longer requires "hostname" field to be an exact match
 
- -- Nick Moeck <nick@nickmoeck.com>  {date -R}
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 10 Nov 2011 06:29:55 +0000
 
 openstatus-server (0.2.2) stable; urgency=low
 

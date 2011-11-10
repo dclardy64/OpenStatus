@@ -27,7 +27,17 @@
 		} else {
 			echo '<tr style="text-align: center">';
 		}
-		echo '<td rowspan="'.($row['note'] != "" ? '3' : '2').'"><a href="/history.php?uid='. $row['uid'].'">'. $row['hostname'] .'</a></td>';
+		$dbq = $db->prepare('SELECT COUNT(*) FROM processes WHERE uid = ?');
+		$dbr = $dbq->execute(array($row['uid']));
+		$servicecount = $dbq->fetch();
+		$numrows = 1;
+		if ($row['note'] != "") {
+			$numrows++;
+		}
+		if ($servicecount[0] > 0) {
+			$numrows++;
+		}
+		echo '<td rowspan="'.$numrows.'"><a href="/history.php?uid='. $row['uid'].'">'. $row['hostname'] .'</a></td>';
 
 		echo '<td><span id="time-'.$i.'"></span></td>';
 		$jsend .= '$(function () {
@@ -59,26 +69,34 @@
 		echo '</td>';
 		echo '</tr>';
 
-		echo '<tr>';
+		if ($servicecount[0] > 0) {
 		$dbq = $db->prepare('SELECT * FROM processes WHERE uid = ? ORDER BY name ASC');
 		$dbr = $dbq->execute(array($row['uid']));
+		echo '<tr>';
 		echo '<td colspan="5" style="text-align: left; line-height: 22px;"><strong>Services:</strong><ul class="services">';
 		while ($service = $dbq->fetch(PDO::FETCH_ASSOC)) {
-			echo '<li class="'.($service['status'] == 0 ? 'service-up' : 'service-down').'">'. $service['name'] .'</li>';
+			switch ($service['status']) {
+				case 0:
+					$class = "service-up";
+					break;
+				case 1:
+					$class = "service-warning";
+					break;
+				case 2:
+					$class = "service-critical";
+					break;
+				case -1:
+					$class = "service-unknown";
+					break;
+			}
+			echo '<li class="'.$class.'">'. $service['name'] .'</li>';
 		}
 		echo '</ul>';
 		echo '</td>';
-
 		echo '</tr>';
-	   	if ($row['status'] == "0") {
-			echo '<tr style="text-align: center" class="offline">';
-		} elseif ($row['uptime'] == "n/a") {
-			echo '<tr style="text-align: center" class="online-but-no-data">';
-		} else {
-			echo '<tr style="text-align: center">';
 		}
 		if ($row['note'] != "") {
-			echo '<td colspan="5" style="text-align:left;"><strong>Notes: </strong>'.$row['note'].'</td></tr>';
+			echo '<tr><td colspan="5" style="text-align:left;"><strong>Notes: </strong>'.$row['note'].'</td></tr>';
 		}
 		$i++;
 	}
