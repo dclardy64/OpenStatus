@@ -205,7 +205,10 @@ def processData(data):
 				if (server != None):
 
 					ins = (int(time()), 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
+					history = (int(time()), data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
 					sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ? WHERE uid = ?', ins)
+					logger.debug(history)
+					sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
 
 					# Let's temporarily set all processes to unknown (-1) status
 					sql.execute('UPDATE processes SET status = ? WHERE uid = ?', (-1, server['uid']))

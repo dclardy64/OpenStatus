@@ -13,13 +13,10 @@
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Cache-Control: post-check=0, pre-check=0', false);
-	if ($_SERVER['SCRIPT_NAME'] == '/index.php' || $_SERVER['SCRIPT_NAME'] == '/history.php') {
-		header('Refresh: 60');
-	}
         header('Pragma: no-cache');
 
 	function statusRow($row) {
-		global $db, $i, $jsend;
+		global $db, $i, $jsend, $lbjs;
 	   	if ($row['status'] == "0") {
 			echo '<tr style="text-align: center" class="offline">';
 		} elseif ($row['uptime'] == "n/a") {
@@ -51,7 +48,7 @@
 		} else {
 			$mp = ($row['mused'])/$row['mtotal']*100;
 			$used = $row['mused'];
-			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div></td>';
+			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div><br /><a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1w" rel="lightbox-'.$row['uid'].'-memory">1w</a></td>';
 		}
 		echo '</td>';
 		echo '<td class="5pad">';
@@ -61,11 +58,12 @@
 		} else {
 			echo 'N/A';
 		}
-		echo '</td>';
-		echo '<td class="5pad">';
+		echo '<a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1w" rel="lightbox-'.$row['uid'].'-disk">1w</a> </td>';
+		echo '<td class="5pad"><div style="display:block; margin: 3px; padding: 2px;">';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load1']).'">'. sprintf('%.02f', $row['load1']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load5']).'">'. sprintf('%.02f', $row['load5']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load15']).'">'. sprintf('%.02f', $row['load15']) .'</span>&nbsp;';
+		echo '</div><a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1h" rel="lightbox-'.$row['uid'].'-load">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=3h" rel="lightbox-'.$row['uid'].'-load">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=6h" rel="lightbox-'.$row['uid'].'-load">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=12h" rel="lightbox-'.$row['uid'].'-load">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1d" rel="lightbox-'.$row['uid'].'-load">1d</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1w" rel="lightbox-'.$row['uid'].'-load">1w</a> ';
 		echo '</td>';
 		echo '</tr>';
 
@@ -99,6 +97,10 @@
 			echo '<tr><td colspan="5" style="text-align:left;"><strong>Notes: </strong>'.$row['note'].'</td></tr>';
 		}
 		$i++;
+		$lbjs .= "
+$(function() { $('a[rel=lightbox-".$row['uid']."-load]').lightBox({fixedNavigation:true}); }); 
+$(function() { $('a[rel=lightbox-".$row['uid']."-disk]').lightBox({fixedNavigation:true}); }); 
+$(function() { $('a[rel=lightbox-".$row['uid']."-memory]').lightBox({fixedNavigation:true}); }); ";
 	}
 
 		/* From http://www.php.net/manual/en/function.filesize.php#100097, removed bytes*/
@@ -125,6 +127,17 @@
                 <link rel="stylesheet" href="/css/style.css"></link>
                 <script type="text/javascript" src="/js/jquery-1.6.4.min.js"></script>
                 <script tyle="text/javascript" src="/js/jquery.countdown.min.js"></script>
+		<script type="text/javascript" src="/js/jquery.lightbox-0.5.min.js"></script>
+<?php
+	if ($_SERVER['SCRIPT_NAME'] == '/index.php' || $_SERVER['SCRIPT_NAME'] == '/history.php') {
+		echo '<script type="text/javascript">
+			function reloader() { window.location.reload() }
+			refreshTimer = setInterval(\'reloader()\', 60000);
+			</script>
+		';
+	}
+?>
+		<link rel="stylesheet" type="text/css" href="/css/jquery.lightbox-0.5.css" media="screen" />
         </head>
 	<body>
                 <div id="wrapper">
