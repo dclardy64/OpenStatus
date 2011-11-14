@@ -319,7 +319,7 @@ def main():
 		output['hostname'] = getHostname()
 		output['ips'] = getIPs()
 		output['who'] = getWho()
-		if "commands" in config:
+		if "processes" in config:
 			output['procs'] = checkProcs()
 		output['uptime'] = getUptime()
 		output['ram'] = getMem()
