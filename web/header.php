@@ -16,7 +16,13 @@
         header('Pragma: no-cache');
 
 	function statusRow($row) {
-		global $db, $i, $jsend, $lbjs;
+		global $db, $i, $jsend, $lbjs, $provider;
+
+		if ($row['provider'] != $provider) {
+			echo '<tr><td colspan="6" style="text-align: left; vertical-align: middle; font-weight: bold; font-size: 10px; padding-left: 5px;">'. $row['provider'] .'</td></tr>';
+			$provider = $row['provider'];
+		}
+
 	   	if ($row['status'] == "0") {
 			echo '<tr style="text-align: center" class="offline">';
 		} elseif ($row['uptime'] == "n/a") {

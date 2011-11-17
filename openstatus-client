@@ -314,7 +314,8 @@ def main():
 		logger.info('Not monitoring any commands')
 	while 1:
 		output = {}
-		#output['hostname'] = getHostname()
+		output['time'] = int(time.time())
+		starttime = time.time()
 		output['hostname'] = getHostname()
 		output['ips'] = getIPs()
 		output['who'] = getWho()
@@ -334,7 +335,12 @@ def main():
 			s.close()
 		except socket.error, (errno, strerror):
 			logger.warning('Could not connect to server %s:%d: %s' % (config['server']['ip'], config['server']['port'], strerror))
-		time.sleep(float(config['misc']['interval']))
+		endtime = time.time()
+		exectime = endtime-starttime
+		logger.debug('Start: %f  End: %f' % (starttime, endtime))
+		logger.debug('Exec time: %f' % (exectime))
+		logger.debug('Sleeping for %f' % (float(config['misc']['interval']-exectime)))
+		time.sleep(float(config['misc']['interval']) - exectime)
 
 if __name__ == "__main__":
 

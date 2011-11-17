@@ -27,18 +27,12 @@ function loadavgGraph($interval, $uid = 0) {
 
 	while ($data = $query->fetch(PDO::FETCH_ASSOC)) {
 		$rounded = floor($data['time']/60)*60;
-
-		// This should correct for situations where rounding down causes us to have two points for the same minute, causing a gap in the graph where there really shouldn't be one.
-		if(array_search($rounded, $xpoints1) !== false) {
-			$rounded = $rounded + 60;
-		}
 		$xpoints1[] = $rounded;
 		$xpoints5[] = $rounded;
 		$xpoints15[] = $rounded;
 		$points1[] = $data['load1'];
 		$points5[] = $data['load5'];
 		$points15[] = $data['load15'];
-
 	}
 
 	foreach ($xpoints1 as $key => $value) {
@@ -104,22 +98,22 @@ function loadavgGraph($interval, $uid = 0) {
 	$MyData->addPoints($newxvalues15, "Labels");
 	$MyData->setSerieDescription("Labels","Time");
 	$MyData->setAbscissa("Labels");
-	$MyData->setXAxisDisplay(AXIS_FORMAT_TIME, "G:i");
+	$MyData->setXAxisDisplay(AXIS_FORMAT_TIME, $queryinterval[3]);
 
 	/* Create the pChart object */
 	$myPicture = new pImage(700,230,$MyData);
 
-	/* Turn of Antialiasing */
-	$myPicture->Antialias = FALSE;
+	/* Turn on Antialiasing */
+	$myPicture->Antialias = TRUE;
 
 	/* Add a border to the picture */
 	$myPicture->drawRectangle(0,0,699,229,array("R"=>0,"G"=>0,"B"=>0));
 
 	/* Write the chart title */ 
 	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>11));
-	
-	$myPicture->drawText(180,35,"Load Average - ".$queryinterval[1],array("FontSize"=>14,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
-	$myPicture->drawText(180,15,"Server: ".$info['hostname'], array("FontSize"=>14, "Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+	$myPicture->drawText(350,35,"Load Average - ".$queryinterval[1],array("FontSize"=>14,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+	$myPicture->drawText(350,15,"Server: ".$info['hostname'], array("FontSize"=>14, "Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+
 	/* Set the default font */
 	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>8));
 
@@ -127,7 +121,7 @@ function loadavgGraph($interval, $uid = 0) {
 	$myPicture->setGraphArea(60,40,650,200);
 
 	/* Draw the scale */
-	$scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"DrawSubTicks"=>TRUE,"CycleBackground"=>TRUE,"LabelSkip"=>$queryinterval[2], "Mode"=>SCALE_MODE_START0);
+	$scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"CycleBackground"=>FALSE,"LabelSkip"=>$queryinterval[2], "Mode"=>SCALE_MODE_START0, "DrawSubTicks"=>TRUE, "SkippedTickAlpha"=>0, "SubTickR"=>0, "SubTickG"=>0, "SubTickB"=>0 );
 	$myPicture->drawScale($scaleSettings);
 
 	/* Turn on Antialiasing */
@@ -151,23 +145,21 @@ function memoryGraph($interval, $uid = 0) {
 	/* Create and populate the pData object */
 	$MyData = new pData();  
 
+	$query = $db->prepare('SELECT * FROM servers WHERE uid = ?');
+	$query->execute(array($uid));
+	$info = $query->fetch(PDO::FETCH_ASSOC);
+
 	$query = $db->prepare('SELECT * FROM history WHERE uid = ? AND time > ? ORDER BY time ASC');
 	$history = $query->execute(array($uid, time()-$queryinterval[0]));
-	$xpoints = array();
+	//$xpoints = array();
 	$points1 = array();
 	while ($data = $query->fetch(PDO::FETCH_ASSOC)) {
 		$rounded = floor($data['time']/60)*60;
-
-		if(array_search($rounded, $xpoints) !== false) {
-			$rounded = $rounded + 60;
-		}
-
 		$xpoints[] = $rounded;
 		$points1[] = $data['mused'];
 	}
 	foreach ($xpoints as $key => $value) {
 		if ($value+100 < $xpoints[$key+1]) {
-			trigger_error("No key for ".($value+60));
 			$diff = $value - $xpoints[$key+1];
 			while ($diff < 0) {
 				$xpoints[] = $value+60;
@@ -190,7 +182,7 @@ function memoryGraph($interval, $uid = 0) {
 	$MyData->addPoints($newxvalues, "Labels");
 	$MyData->setSerieDescription("Labels","Time");
 	$MyData->setAbscissa("Labels");
-	$MyData->setXAxisDisplay(AXIS_FORMAT_TIME, "G:i");
+	$MyData->setXAxisDisplay(AXIS_FORMAT_TIME, $queryinterval[3]);
 
 	/* Create the pChart object */
 	$myPicture = new pImage(700,230,$MyData);
@@ -203,7 +195,8 @@ function memoryGraph($interval, $uid = 0) {
 
 	/* Write the chart title */ 
 	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>11));
-	$myPicture->drawText(180,35,"Memory Used - ".$queryinterval[1],array("FontSize"=>20,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+	$myPicture->drawText(350,35,"Memory Used - ".$queryinterval[1],array("FontSize"=>14,"Align"=>TEXT_ALIGN_MIDDLEMIDDLE));
+	$myPicture->drawText(350,15,"Server: ".$info['hostname'], array("FontSize"=>14, "Align"=>TEXT_ALIGN_MIDDLEMIDDLE));
 
 	/* Set the default font */
 	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>8));
@@ -212,7 +205,7 @@ function memoryGraph($interval, $uid = 0) {
 	$myPicture->setGraphArea(60,40,650,200);
 
 	/* Draw the scale */
-	$scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"DrawSubTicks"=>TRUE,"CycleBackground"=>TRUE,"LabelSkip"=>$queryinterval[2], "Mode"=>SCALE_MODE_START0);
+	$scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"CycleBackground"=>FALSE,"LabelSkip"=>$queryinterval[2], "Mode"=>SCALE_MODE_START0, "DrawSubTicks"=>TRUE, "SkippedTickAlpha"=>0, "SubTickR"=>0, "SubTickG"=>0, "SubTickB"=>0 );
 	$myPicture->drawScale($scaleSettings);
 
 	/* Turn on Antialiasing */
@@ -225,21 +218,102 @@ function memoryGraph($interval, $uid = 0) {
 	$myPicture->autoOutput("graphs/example.drawLineChart.simple.png");
 }
 
+function diskGraph($interval, $uid = 0) {
+	global $db;
+
+	$queryinterval = interval2seconds($interval);
+
+	/* Create and populate the pData object */
+	$MyData = new pData();  
+
+	$query = $db->prepare('SELECT * FROM servers WHERE uid = ?');
+	$query->execute(array($uid));
+	$info = $query->fetch(PDO::FETCH_ASSOC);
+
+	$query = $db->prepare('SELECT * FROM history WHERE uid = ? AND time > ? ORDER BY time ASC');
+	$history = $query->execute(array($uid, time()-$queryinterval[0]));
+	//$xpoints = array();
+	$points1 = array();
+	while ($data = $query->fetch(PDO::FETCH_ASSOC)) {
+		$rounded = floor($data['time']/60)*60;
+		$xpoints[] = $rounded;
+		$points1[] = ($data['diskused']/$data['diskfree'])*100;
+	}
+	foreach ($xpoints as $key => $value) {
+		if ($value+100 < $xpoints[$key+1]) {
+			$diff = $value - $xpoints[$key+1];
+			while ($diff < 0) {
+				$xpoints[] = $value+60;
+				$points1[] = VOID;
+				$diff = $diff + 60;
+			}
+		}
+	}
+
+	$newpoints = array_combine($xpoints, $points1);
+	ksort($newpoints, SORT_NUMERIC);
+	foreach ($newpoints as $key => $value) {
+		$newxvalues[] = $key;
+		$newyvalues[] = $value;
+	}
+	$MyData->addPoints($newyvalues,"Disk Space Used");
+	$MyData->loadPalette("pchart/palettes/openstatus.color", TRUE);
+	$MyData->setAxisName(0,"Disk Space Used");
+	$MyData->setAxisUnit(0, "%");
+	$MyData->addPoints($newxvalues, "Labels");
+	$MyData->setSerieDescription("Labels","Time");
+	$MyData->setAbscissa("Labels");
+	$MyData->setXAxisDisplay(AXIS_FORMAT_TIME, $queryinterval[3]);
+
+	/* Create the pChart object */
+	$myPicture = new pImage(700,230,$MyData);
+
+	/* Turn of Antialiasing */
+	$myPicture->Antialias = FALSE;
+
+	/* Add a border to the picture */
+	$myPicture->drawRectangle(0,0,699,229,array("R"=>0,"G"=>0,"B"=>0));
+
+	/* Write the chart title */ 
+	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>11));
+	$myPicture->drawText(350,35,"Disk Space Used - ".$queryinterval[1],array("FontSize"=>14,"Align"=>TEXT_ALIGN_MIDDLEMIDDLE));
+	$myPicture->drawText(350,15,"Server: ".$info['hostname'], array("FontSize"=>14, "Align"=>TEXT_ALIGN_MIDDLEMIDDLE));
+
+	/* Set the default font */
+	$myPicture->setFontProperties(array("FontName"=>"pchart/fonts/calibri.ttf","FontSize"=>8));
+
+	/* Define the chart area */
+	$myPicture->setGraphArea(60,40,650,200);
+
+	/* Draw the scale */
+	$AxisBoundaries = array(0=>array("Min"=>0,"Max"=>100));
+	$scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"CycleBackground"=>FALSE,"DrawXLines"=>FALSE, "LabelSkip"=>$queryinterval[2], "Mode"=>SCALE_MODE_MANUAL, "ManualScale"=>$AxisBoundaries, "DrawSubTicks"=>TRUE, "SkippedTickAlpha"=>0, "SubTickR"=>0, "SubTickG"=>0, "SubTickB"=>0 );
+	$myPicture->drawScale($scaleSettings);
+
+	/* Turn on Antialiasing */
+	$myPicture->Antialias = TRUE;
+
+	/* Draw the line chart */
+	$myPicture->drawFilledSplineChart(array("BreakVoid"=>FALSE, "BreakR"=>0, "BreakG"=>0, "BreakB"=>255));
+
+	/* Render the picture (choose the best way) */
+	$myPicture->autoOutput("graphs/example.drawLineChart.simple.png");
+}
 function interval2seconds($int) {
 	if ($int == "1h") {
-		return array(3600, 'Past Hour', 4);
+		return array(1*3600, 'Past Hour', 4, 'G:i');
 	} elseif ($int == "3h") {
-		return array(3*3600, 'Past 3 Hours', 14);
+		return array(3*3600, 'Past 3 Hours', 14, 'G:i');
 	} elseif ($int == "6h") {
-		return array(6*3600, 'Past 6 Hours', 14);
+		return array(6*3600, 'Past 6 Hours', 29, 'G:i');
 	} elseif ($int == "12h") {
-		return array(12*3600, 'Past 12 Hours', 59);
+		return array(12*3600, 'Past 12 Hours', 59, 'G:i');
 	} elseif ($int == "1d") {
-		return array(24*3600, 'Past Day', 59);
+		return array(24*3600, 'Past Day', (59*2)+1, 'G:i');
 	} elseif ($int == "1w") {
-		return array(7*24*3600, 'Past Week', 59*4);
+		return array(7*24*3600, 'Past Week', (59*12)+11, 'M j, G:i');
 	} else {
-		return array(3600, 'Past Hour', 4);
+		return array(3600, 'Past Hour', 4, 'G:i');
 	}
 }
 
@@ -253,6 +327,8 @@ if ($_GET['type'] == "loadavg") {
 	loadavgGraph($interval, intval($_GET['uid']));
 } elseif ($_GET['type'] == "memory") {
 	memoryGraph($interval, intval($_GET['uid']));
+} elseif ($_GET['type'] == "disk") {
+	diskGraph($interval, intval($_GET['uid']));
 } else {
 	loadavgGraph($interval, intval($_GET['uid']));
 }

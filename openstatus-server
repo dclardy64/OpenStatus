@@ -204,8 +204,8 @@ def processData(data):
 				server = sql.fetchone()
 				if (server != None):
 
-					ins = (int(time()), 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
-					history = (int(time()), data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
+					ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
+					history = (data['time'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
 					sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ? WHERE uid = ?', ins)
 					logger.debug(history)
 					sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
@@ -216,15 +216,15 @@ def processData(data):
 						for proc in data['procs']:
 							upd = (data['procs'][proc]['status'], server['uid'], data['procs'][proc]['name'])
 							sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-							if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, "Processes", "Warning", data['procs'][proc]['name'])
-							elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, "Processes", "Critical", data['procs'][proc]['name'])
+							if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, data['procs'][proc]['name'], "Warning", "Down")
+							elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, data['procs'][proc]['name'], "Critical", "Down")
 					if "commands" in data:
 						for com in data['commands']:
 							# These are handled the same way as process checks because it makes it so much easier, and they're pretty much the same anyways
 							upd = (data['commands'][com]['status'], server['uid'], data['commands'][com]['name'])
 							sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-							if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, "Commands", "Warning", data['commands'][com]['name'])
-							elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, "Commands", "Critical", data['commands'][com]['name'])
+							if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, data['commands'][com]['name'], "Warning", data['commands'][com]['value'])
+							elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, data['commands'][com]['name'], "Critical", data['commands'][com]['value'])
 					if data['ram']['status'] != 0:
 						if data['ram']['status'] == 1: alert(server['hostname'], addr, 'Memory', 'Warning', data['ram']['used'])
 						elif data['ram']['status'] == 2: alert(server['hostname'], addr, 'Memory', 'Critical', data['ram']['used'])

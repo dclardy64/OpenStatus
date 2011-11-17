@@ -63,8 +63,8 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 	echo '
 		<table style="border: 1;" id="servers">
 		<thead>
-			<tr><th colspan="6">Servers</th></tr>
-			<tr>
+		<tr><th colspan="6">Servers</th></tr>
+		<tr>
 				<th scope="col">Name</th>
 				<th scope="col">Last Updated</th>
 				<th scope="col" style="width: 98px">Uptime</th>
@@ -76,10 +76,10 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 			<tbody>';
 
 
-	$dbs = $db->prepare('SELECT * FROM servers WHERE disabled = 0 ORDER BY hostname ASC');
+	$dbs = $db->prepare('SELECT * FROM servers WHERE disabled = 0 ORDER BY provider ASC, hostname ASC');
 	$result = $dbs->execute();
 	$i = 0;
-
+	$provider = '';
 	while ($row = $dbs->fetch(PDO::FETCH_ASSOC)) {
 		statusRow($row);
 	}

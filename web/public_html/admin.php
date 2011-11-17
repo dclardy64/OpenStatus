@@ -17,6 +17,9 @@ if ($auth === true) {
 		$del->execute(array($_GET['uid']));
 		$del = $db->prepare('DELETE FROM processes WHERE uid = ?');
 		$del->execute(array($_GET['uid']));
+		$del = $db->prepare('DELETE FROM alerts WHERE uid = ?');
+		$del->execute(array($_GET['uid']));
+
 		header('Location: admin.php');
 	}
 
@@ -46,12 +49,12 @@ if ($auth === true) {
 	}
 
 	if (isset($_POST['addserver'])) {
-		$query = $db->prepare('INSERT INTO `servers` (`hostname`, `ip`, `disabled`) VALUES (?, ?, ?)');
-		$q = $query->execute(array($_POST['hostname'], $_POST['ip'], 0));
+		$query = $db->prepare('INSERT INTO `servers` (`hostname`, `ip`, `provider`, `disabled`) VALUES (?, ?, ?, ?)');
+		$q = $query->execute(array($_POST['hostname'], $_POST['ip'], $_POST['provider'], 0));
 		header('Location: admin.php');
 	}
 
-	$dbs = $db->prepare('SELECT * FROM servers WHERE disabled = 0 ORDER BY hostname ASC');
+	$dbs = $db->prepare('SELECT * FROM servers WHERE disabled = 0 ORDER BY provider ASC, hostname ASC');
 	$result = $dbs->execute();
 	$i = 0;
 	$provider = '';
@@ -68,6 +71,10 @@ if ($auth === true) {
 			</tr>
 		</thead>';
 	while ($row = $dbs->fetch(PDO::FETCH_ASSOC)) {
+		if ($row['provider'] != $provider) {
+			echo '<tr><td colspan="6" style="text-align: left; vertical-align: middle; font-weight: bold; font-size: 10px; padding-left: 5px;">'. $row['provider'] .'</td></tr>';
+			$provider = $row['provider'];
+		}
 		echo '
 			<tr>
 				<td>' .$row['uid']. '</td>
@@ -90,19 +97,21 @@ if ($auth === true) {
 		<form action="admin.php?addserver" method="post">
 		<table>
 		<thead>
-			<tr><th colspan="2">Add Server</th></tr>
+			<tr><th colspan="3">Add Server</th></tr>
 			<tr>
 				<th>Name</th>
 				<th>IP</th>
+				<th>Provider</th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr>
 				<td><input type="name" name="hostname" style="width: 150px" /></td>
 				<td><input type="text" name="ip" style="width: 150px" /></td>
+				<td><input type="text" name="provider" style="width: 150px" /></td>
 			</tr>
 			<tr>
-				<td colspan="2"><input type="submit" name="addserver" value="Add Server" /></td>
+				<td colspan="3"><input type="submit" name="addserver" value="Add Server" /></td>
 			</tr>
 		</tbody>
 		</table>
