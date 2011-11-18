@@ -1,6 +1,6 @@
 openstatus-client (0.3.2) stable; urgency=low
 
-  * Fixed issue #5
+  * Fixed issue #7
 
  -- Nick Moeck <nick@nickmoeck.com>  Fri, 18 Nov 2011 12:00:00 +0000
 
