@@ -1,4 +1,4 @@
-openstatus-server (0.2.3) stable; urgency=low
+openstatus-server (0.3.0) stable; urgency=low
 
   * Added the ability to monitor output of specific commands
   * Better logging

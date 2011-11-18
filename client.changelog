@@ -1,3 +1,15 @@
+openstatus-client (0.3.2) stable; urgency=low
+
+  * Fixed issue #5
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 18 Nov 2011 12:00:00 +0000
+
+openstatus-client (0.3.1) stable; urgency=low
+
+  * Fixed bug where missing commands section caused processes to not send
+
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 17 Nov 2011 04:55:00 +0000
+
 openstatus-client (0.3.0) stable; urgency=low
 
   * Added the ability to check the output of specific commands
