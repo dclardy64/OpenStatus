@@ -13,11 +13,65 @@ logger.setLevel(logging.INFO)
 ch  = logging.StreamHandler()
 logger.addHandler(ch)
 
+cfg = """
+[server]
+port = integer(min=1, max=65535, default=12999)
+[misc]
+interval = integer(min=1, default=60)
+[load]
+warning = float(min=1, default=1)
+critical = float(min=2, default=2)
+[memory]
+warning = integer(min=0, default=512)
+critical = integer(min=0, default=1024)
+[disk]
+warning = integer(min=0, max=100, default=80)
+critical = integer(min=0, max=100, default=90)
+[network]
+interface = string(default='eth0')
+"""
+
+configfile = '/etc/openstatus/openstatus-client.conf'
+
+try:
+	config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+except (ConfigObjError, IOError), e:
+	logger.error('%s' % (e))
+	try:
+		configfile = '/etc/openstatus/openstatus-client.conf'
+		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
+	except (ConfigObjError, IOError), e:
+		logger.error('%s' % (e))
+		logger.error('Exiting...')
+		sys.exit(3)
+validator = Validator()
+result = config.validate(validator)
+if result != True:
+	logger.error('Config file validation failed!')
+	sys.exit(1)
+
+def getTransfer():
+	global config, logger
+	rp = os.popen("ifconfig %s | grep \"RX bytes\"" % (config['network']['interface']))
+	line = rp.readline()
+	words = line.strip().split(' ')
+	try:
+		rx = words[1].split(':')[1]
+		tx = words[6].split(':')[1]
+	except:
+		logger.critical('Interface specified does not exist.')
+		logger.critical('Exiting...')
+		sys.exit(4)
+	return {"rx" : int(rx), "tx": int(tx)}
+
+starttime = time.time()
+transferbytes = getTransfer()
+
 try:
 	import setproctitle
 	setproctitle.setproctitle('openstatus-client')
 except ImportError:
-	logger.warning('setprotitle module not found')
+	logger.warning('setproctitle module not found')
 try:
 	import json
 except:
@@ -27,8 +81,9 @@ except:
 		logger.error('Could not import json module')
 		sys.exit(1)
 
+
 debug = False
-configfile = '/etc/openstatus/openstatus-client.conf'
+
 try:
 	options, remainder = getopt.getopt(sys.argv[1:], 'dc:', ['debug',])
 except getopt.GetoptError:
@@ -251,6 +306,7 @@ def getIPs():
 		ary.append({'ip': ip, 'host': host})
 	return ary
 
+	
 def getWho():
 	users = {}
 	rp = os.popen("/usr/bin/who -q")
@@ -261,49 +317,9 @@ def getWho():
 		except KeyError: users[v] = 1
 	return users
 
-def getConfig():
-
-	global config, configfile
-
-	cfg = """
-	[server]
-	port = integer(min=1, max=65535, default=12999)
-	[misc]
-	interval = integer(min=1, default=60)
-	[load]
-	warning = float(min=1, default=1)
-	critical = float(min=2, default=2)
-	[memory]
-	warning = integer(min=0, default=512)
-	critical = integer(min=0, default=1024)
-	[disk]
-	warning = integer(min=0, max=100, default=80)
-	critical = integer(min=0, max=100, default=90)
-	[critical]
-	email = string(default='root@localhost')
-	"""
-	try:
-		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
-	except (ConfigObjError, IOError), e:
-		logger.error('%s' % (e))
-		try:
-			configfile = '/etc/openstatus/openstatus-client.conf'
-			config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
-		except (ConfigObjError, IOError), e:
-			logger.error('%s' % (e))
-			logger.error('Exiting...')
-			sys.exit(3)
-	validator = Validator()
-	result = config.validate(validator)
-	if result != True:
-		logger.error('Config file validation failed!')
-		sys.exit(1)
-
-
 def main():
 
-	getConfig()
-	global configprocs, configcommands
+	global configprocs, configcommands, transferbytes, exectime
 	if "processes" in config:
 		configprocs = config['processes']
 	else:
@@ -313,17 +329,22 @@ def main():
 	else:
 		logger.info('Not monitoring any commands')
 	while 1:
-		output = {}
-		output['time'] = int(time.time())
+
 		starttime = time.time()
+		transferbytes2 = getTransfer()
+		transferdiff = { "rx": int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime)), "tx": int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime)) }
+		transferbytes = transferbytes2
+		output = {}
+		output['time'] = int(starttime)
 		output['hostname'] = getHostname()
 		output['ips'] = getIPs()
 		output['who'] = getWho()
-		if "commands" in config:
+		if "processes" in config:
 			output['procs'] = checkProcs()
 		output['uptime'] = getUptime()
 		output['ram'] = getMem()
 		output['disk'] = getDisk()
+		output['transfer'] = transferdiff
 		if "commands" in config:
 			output['commands'] = checkCommands()
 
@@ -337,9 +358,6 @@ def main():
 			logger.warning('Could not connect to server %s:%d: %s' % (config['server']['ip'], config['server']['port'], strerror))
 		endtime = time.time()
 		exectime = endtime-starttime
-		logger.debug('Start: %f  End: %f' % (starttime, endtime))
-		logger.debug('Exec time: %f' % (exectime))
-		logger.debug('Sleeping for %f' % (float(config['misc']['interval']-exectime)))
 		time.sleep(float(config['misc']['interval']) - exectime)
 
 if __name__ == "__main__":
@@ -350,7 +368,9 @@ if __name__ == "__main__":
 
 	if debug == False:
 		daemonize('/var/log/openstatus-client.log', '/var/log/openstatus-client.log', '/dev/null', '/var/run/openstatus-client.pid')
+		exectime = time.time()-starttime
 		main()
 	elif debug == True:
 		logger.info("OpenStatus client started in debug mode with PID %s using config file %s" % (os.getpid(), configfile))
+		exectime = time.time()-starttime
 		main()

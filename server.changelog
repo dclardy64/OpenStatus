@@ -1,4 +1,13 @@
-openstatus-server (0.2.3) stable; urgency=low
+openstatus-server (0.4.0) stable; urgency=low
+
+  * Added storage of historical data
+  * Added graphing of historical data
+  * Re-added "provider" field and grouping by provider
+  * Switched from asyncore to twisted for asynchronous processing of requests
+
+ -- Nick Moeck <nick@nickmoeck.com>  Wed, 23 Nov 2011 09:30:00 +0000
+
+openstatus-server (0.3.0) stable; urgency=low
 
   * Added the ability to monitor output of specific commands
   * Better logging

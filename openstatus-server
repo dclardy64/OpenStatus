@@ -1,9 +1,19 @@
 #!/usr/bin/python
 
-import socket, signal, os, sys, atexit, time, getopt, sqlite3, smtplib, logging, asyncore
+import socket, signal, os, sys, atexit, time, getopt, sqlite3, smtplib, logging
 from configobj import ConfigObj, ConfigObjError
 from validate import Validator
 from time import time
+
+from twisted.internet.protocol import Protocol, Factory
+from twisted.protocols.policies import TimeoutMixin
+from twisted.internet import reactor
+
+class handler(Protocol, TimeoutMixin):
+	def connectionMade(self):
+		self.setTimeout(5)
+	def dataReceived(self, data):
+		processData(data, self.transport.getPeer())
 
 logger = logging.getLogger('openstatus-server')
 hdlr = logging.FileHandler('/var/log/openstatus-server.log')
@@ -88,13 +98,21 @@ def daemonize(stdout, stderr, stdin, pidfile, startmsg = 'OpenStatus started wit
 	os.dup2(so.fileno(), sys.stdout.fileno())
 	os.dup2(se.fileno(), sys.stderr.fileno())
 
-def send_email(sender, receiver, subject, body):
-
-	msg = ("From: %s\rTo: %s\rSubject: %s\r\r%s" %(sender, receiver, subject, body))
-	s = smtplib.SMTP('localhost')
-	s.sendmail(sender, [receiver], msg)
-	s.quit()
-
+def sendAlert(level, subject, body):
+	global config
+	levellower = level.lower()
+	if config[levellower].has_key("email") or (config[levellower].has_key("level") and config[levellower]['type'] == "email"):
+		if config[levellower]['type'] == "email":
+			receiver = config[levellower]['arg']
+		else:
+			receiver = config[levellower()]['email']
+		msg = ("From: %s\rTo: %s\rSubject: %s\r\r%s" %(config['server']['email_from'], receiver, subject, body))
+		s = smtplib.SMTP('localhost')
+		s.sendmail(sender, [receiver], msg)
+		s.quit()
+	elif config[levellower].has_key("type") and config[levellower]['type'] == "external":
+		os.system('%s "%s"' % (config[levellower]['arg'], body))
+		
 def alert(hostname, ip, module, level, value, setstatus = False):
 
 	# Let's insert this alert into the database
@@ -113,8 +131,9 @@ def alert(hostname, ip, module, level, value, setstatus = False):
 		if (setstatus == True):
 			sql.execute('UPDATE servers SET status = 0 WHERE uid = ?', (server['uid'], ))
 		title = "OpenStatus alert on server %s" % hostname
-		message = "A problem was detected with a server monitored by OpenStatus.  The details are below. Server: %sModule: %sAlert Level: %sValue: %s" % (hostname, module, level, value)
-		send_email(config['server']['email_from'], config['warning']['email'], title, message)
+		message = "A problem was detected with a server monitored by OpenStatus.  The details are. Server: %s Module: %s Alert Level: %s Value: %s" % (hostname, module, level, value)
+	
+		sendAlert(level, title, message)
 
 def sigHdl(signum, frm):
 	global s
@@ -151,9 +170,7 @@ def getConfig():
 	port = integer(min=1, max=65535, default=12999)
 	email_from = string(default='root@localhost')
 	[warning]
-	email = string(default='root@localhost')
 	[critical]
-	email = string(default='root@localhost')
 	"""
 	try:
 		config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
@@ -179,36 +196,73 @@ def dbConnect():
 	global sql
 	sql = db.cursor()
 
-
-	
-
-def processData(data):
-	global addr
+def processData(data, addr):
 	# This huge block of indented try except else statements could probably be done better
 	try: # Make sure it's actually json that got sent
 		data = json.loads(data)
 	except ValueError:
-		logger.error('JSON error from %s' % (addr[0]))
+		logger.error('JSON error from %s' % (addr.host))
 	else:
-		logger.debug('Received JSON from %s: %s' % (addr[0], data))
+		logger.debug('Received JSON from %s: %s' % (addr.host, data))
 		try: # Check that there's a hostname defined
 			host = data['hostname']
 		except KeyError:
-			logger.error('No hostname in json from %s' % (addr[0]))
+			logger.error('No hostname in json from %s' % (addr.host))
 		else:
 			try: # Let's see if we have a server with this IP
-				sql.execute('SELECT * FROM servers WHERE ip = ?', [addr[0]])
+				sql.execute('SELECT * FROM servers WHERE ip = ?', [addr.host])
 			except sqlite3.OperationalError, msg:
 				logger.error(msg, "")
 			else:
 				server = sql.fetchone()
 				if (server != None):
 
-					ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
-					history = (data['time'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], server['uid'])
-					sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ? WHERE uid = ?', ins)
-					logger.debug(history)
-					sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+					ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
+					
+					# Round down to the minute, 5 minute, and 10 minute intervals
+					roundedtime = int((data['time'] // 60) * 60)
+					roundedtime5 = int((data['time'] // 300) * 300)
+					roundedtime10 = int((data['time'] // 600) * 600)
+					
+					history = (roundedtime, data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
+					sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ?', ins)
+					sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+
+					sql.execute('SELECT * FROM history WHERE time = ? and uid = ? LIMIT 1', (roundedtime, server['uid']))
+					hist1 = sql.fetchone()
+					if roundedtime == roundedtime5: # The minute we got is on a 5-minute boundary
+						sql.execute('INSERT INTO history5 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+					else:
+						sql.execute('SELECT * FROM history5 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime5, server['uid']))
+						hist5 = sql.fetchone()
+						if hist5 == None:
+							sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+						else:
+							hist5out = {}
+							for key in hist5.keys():
+								if key != "uid" and key != "time":
+									if hist1[key] > hist5[key]:
+										hist5out[key] = hist1[key]
+									else:
+										hist5out[key] = hist5[key]
+							sql.execute('UPDATE history5 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist5out['mtotal'], hist5out['mused'], hist5out['mfree'], hist5out['mbuffers'], hist5out['disktotal'], hist5out['diskused'], hist5out['diskfree'], hist5out['load1'], hist5out['load5'], hist5out['load15'], hist5out['rx'], hist5out['tx'], server['uid'], roundedtime5))
+
+					if roundedtime == roundedtime10: # The minute we got is on a 10 minute boundary
+						sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+					else:
+						sql.execute('SELECT * FROM history10 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime10, server['uid']))
+						hist10 = sql.fetchone()
+						if hist10 == None:
+							sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+						else:
+							hist10out = {}
+							for key in hist10.keys():
+								if key != "uid" and key != "time":
+									if hist1[key] > hist10[key]:
+										hist10out[key] = hist1[key]
+									else:
+										hist10out[key] = hist10[key]
+							sql.execute('UPDATE history10 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist10out['mtotal'], hist10out['mused'], hist10out['mfree'], hist10out['mbuffers'], hist10out['disktotal'], hist10out['diskused'], hist10out['diskfree'], hist10out['load1'], hist10out['load5'], hist10out['load15'], hist10out['rx'], hist10out['tx'], server['uid'], roundedtime10))
 
 					# Let's temporarily set all processes to unknown (-1) status
 					sql.execute('UPDATE processes SET status = ? WHERE uid = ?', (-1, server['uid']))
@@ -241,43 +295,18 @@ def processData(data):
 					# So, instead, I'm going to do it whenever any other server updates.
 					checkServers()
 
-class Server(asyncore.dispatcher):
-	def __init__(self, host, port):
-		asyncore.dispatcher.__init__(self)
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.bind(('', port))
-		self.listen(1)
-		
-	def handle_accept(self):
-		# when we get a client connection start a dispatcher for that
-		# client
-		global addr
-		socket, addr = self.accept()
-		logger.info('Connection by %s', (addr))
-		Handler(socket)
-			
-class Handler(asyncore.dispatcher_with_send):
-	# dispatcher_with_send extends the basic dispatcher to have an output
-	# buffer that it writes whenever there's content
-
-	def handle_read(self):
-		info = self.recv(4096)
-		logger.debug(info)
-		if not info:
-			self.close()
-		else:
-			processData(info)
 def main():
-
+	
 	getConfig()
 	dbConnect()
 	
 	TCP_IP = config['server']['listen_ip']
 	TCP_PORT = int(config['server']['port'])
-
-	global s
-	s = Server(TCP_IP, TCP_PORT)
-	asyncore.loop()
+	
+	f = Factory()
+	f.protocol = handler
+	reactor.listenTCP(TCP_PORT, f, interface=TCP_IP)
+	reactor.run()
 
 if __name__ == "__main__":
 

@@ -129,7 +129,7 @@ a:link, a:active, a:visited {
 
 #stats > table, #stats > form > table {
 	margin: 20px auto 0;
-	width: 720px;
+	width: 820px;
 }
 
 #alerts {
@@ -193,4 +193,16 @@ a:link, a:active, a:visited {
 	border-radius:5px;
 	text-align:center;
 	padding:2px 5px;
+}
+#upgrade {
+	width: 820px;
+}
+#upgrade td {
+	background: red;
+	font-weight: bold;
+	color: black;
+}
+#upgrade td a {
+	color: yellow;
+	font-weight: bold;
 }
