@@ -216,84 +216,86 @@ def processData(data, addr):
 			else:
 				server = sql.fetchone()
 				if (server != None):
+					try:
+						ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
+					except KeyError, e:
+						logger.error('Missing %s data from %s, ignoring...' % ( e, addr.host))
+					else:	
+						# Round down to the minute, 5 minute, and 10 minute intervals
+						roundedtime = int((data['time'] // 60) * 60)
+						roundedtime5 = int((data['time'] // 300) * 300)
+						roundedtime10 = int((data['time'] // 600) * 600)
+						
+						history = (roundedtime, data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
+						sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ?', ins)
+						sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
 
-					ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
-					
-					# Round down to the minute, 5 minute, and 10 minute intervals
-					roundedtime = int((data['time'] // 60) * 60)
-					roundedtime5 = int((data['time'] // 300) * 300)
-					roundedtime10 = int((data['time'] // 600) * 600)
-					
-					history = (roundedtime, data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
-					sql.execute('UPDATE servers SET time = ?, status = ?, uptime = ?, mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ?', ins)
-					sql.execute('INSERT INTO history (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+						sql.execute('SELECT * FROM history WHERE time = ? and uid = ? LIMIT 1', (roundedtime, server['uid']))
+						hist1 = sql.fetchone()
+						if roundedtime == roundedtime5: # The minute we got is on a 5-minute boundary
+							sql.execute('INSERT INTO history5 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+						else:
+							sql.execute('SELECT * FROM history5 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime5, server['uid']))
+							hist5 = sql.fetchone()
+							if hist5 == None:
+								sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+							else:
+								hist5out = {}
+								for key in hist5.keys():
+									if key != "uid" and key != "time":
+										if hist1[key] > hist5[key]:
+											hist5out[key] = hist1[key]
+										else:
+											hist5out[key] = hist5[key]
+								sql.execute('UPDATE history5 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist5out['mtotal'], hist5out['mused'], hist5out['mfree'], hist5out['mbuffers'], hist5out['disktotal'], hist5out['diskused'], hist5out['diskfree'], hist5out['load1'], hist5out['load5'], hist5out['load15'], hist5out['rx'], hist5out['tx'], server['uid'], roundedtime5))
 
-					sql.execute('SELECT * FROM history WHERE time = ? and uid = ? LIMIT 1', (roundedtime, server['uid']))
-					hist1 = sql.fetchone()
-					if roundedtime == roundedtime5: # The minute we got is on a 5-minute boundary
-						sql.execute('INSERT INTO history5 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
-					else:
-						sql.execute('SELECT * FROM history5 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime5, server['uid']))
-						hist5 = sql.fetchone()
-						if hist5 == None:
+						if roundedtime == roundedtime10: # The minute we got is on a 10 minute boundary
 							sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
 						else:
-							hist5out = {}
-							for key in hist5.keys():
-								if key != "uid" and key != "time":
-									if hist1[key] > hist5[key]:
-										hist5out[key] = hist1[key]
-									else:
-										hist5out[key] = hist5[key]
-							sql.execute('UPDATE history5 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist5out['mtotal'], hist5out['mused'], hist5out['mfree'], hist5out['mbuffers'], hist5out['disktotal'], hist5out['diskused'], hist5out['diskfree'], hist5out['load1'], hist5out['load5'], hist5out['load15'], hist5out['rx'], hist5out['tx'], server['uid'], roundedtime5))
+							sql.execute('SELECT * FROM history10 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime10, server['uid']))
+							hist10 = sql.fetchone()
+							if hist10 == None:
+								sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
+							else:
+								hist10out = {}
+								for key in hist10.keys():
+									if key != "uid" and key != "time":
+										if hist1[key] > hist10[key]:
+											hist10out[key] = hist1[key]
+										else:
+											hist10out[key] = hist10[key]
+								sql.execute('UPDATE history10 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist10out['mtotal'], hist10out['mused'], hist10out['mfree'], hist10out['mbuffers'], hist10out['disktotal'], hist10out['diskused'], hist10out['diskfree'], hist10out['load1'], hist10out['load5'], hist10out['load15'], hist10out['rx'], hist10out['tx'], server['uid'], roundedtime10))
 
-					if roundedtime == roundedtime10: # The minute we got is on a 10 minute boundary
-						sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
-					else:
-						sql.execute('SELECT * FROM history10 WHERE time = ? AND uid = ? LIMIT 1', (roundedtime10, server['uid']))
-						hist10 = sql.fetchone()
-						if hist10 == None:
-							sql.execute('INSERT INTO history10 (time, mtotal, mused, mfree, mbuffers, disktotal, diskused, diskfree, load1, load5, load15, rx, tx, uid) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', history)
-						else:
-							hist10out = {}
-							for key in hist10.keys():
-								if key != "uid" and key != "time":
-									if hist1[key] > hist10[key]:
-										hist10out[key] = hist1[key]
-									else:
-										hist10out[key] = hist10[key]
-							sql.execute('UPDATE history10 SET mtotal = ?, mused = ?, mfree = ?, mbuffers = ?, disktotal = ?, diskused = ?, diskfree = ?, load1 = ?, load5 = ?, load15 = ?, rx = ?, tx = ? WHERE uid = ? AND time = ?', (hist10out['mtotal'], hist10out['mused'], hist10out['mfree'], hist10out['mbuffers'], hist10out['disktotal'], hist10out['diskused'], hist10out['diskfree'], hist10out['load1'], hist10out['load5'], hist10out['load15'], hist10out['rx'], hist10out['tx'], server['uid'], roundedtime10))
+						# Let's temporarily set all processes to unknown (-1) status
+						sql.execute('UPDATE processes SET status = ? WHERE uid = ?', (-1, server['uid']))
+						if "procs" in data:
+							for proc in data['procs']:
+								upd = (data['procs'][proc]['status'], server['uid'], data['procs'][proc]['name'])
+								sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
+								if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, data['procs'][proc]['name'], "Warning", "Down")
+								elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, data['procs'][proc]['name'], "Critical", "Down")
+						if "commands" in data:
+							for com in data['commands']:
+								# These are handled the same way as process checks because it makes it so much easier, and they're pretty much the same anyways
+								upd = (data['commands'][com]['status'], server['uid'], data['commands'][com]['name'])
+								sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
+								if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, data['commands'][com]['name'], "Warning", data['commands'][com]['value'])
+								elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, data['commands'][com]['name'], "Critical", data['commands'][com]['value'])
+						if data['ram']['status'] != 0:
+							if data['ram']['status'] == 1: alert(server['hostname'], addr, 'Memory', 'Warning', data['ram']['used'])
+							elif data['ram']['status'] == 2: alert(server['hostname'], addr, 'Memory', 'Critical', data['ram']['used'])
 
-					# Let's temporarily set all processes to unknown (-1) status
-					sql.execute('UPDATE processes SET status = ? WHERE uid = ?', (-1, server['uid']))
-					if "procs" in data:
-						for proc in data['procs']:
-							upd = (data['procs'][proc]['status'], server['uid'], data['procs'][proc]['name'])
-							sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-							if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, data['procs'][proc]['name'], "Warning", "Down")
-							elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, data['procs'][proc]['name'], "Critical", "Down")
-					if "commands" in data:
-						for com in data['commands']:
-							# These are handled the same way as process checks because it makes it so much easier, and they're pretty much the same anyways
-							upd = (data['commands'][com]['status'], server['uid'], data['commands'][com]['name'])
-							sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-							if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, data['commands'][com]['name'], "Warning", data['commands'][com]['value'])
-							elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, data['commands'][com]['name'], "Critical", data['commands'][com]['value'])
-					if data['ram']['status'] != 0:
-						if data['ram']['status'] == 1: alert(server['hostname'], addr, 'Memory', 'Warning', data['ram']['used'])
-						elif data['ram']['status'] == 2: alert(server['hostname'], addr, 'Memory', 'Critical', data['ram']['used'])
+						if data['disk']['total']['status'] != 0:
+							diskpercent = int(server['disk']['total']['used']) / int(server['disk']['total']['avail'])
+							if data['disk']['total']['status'] == 1: alert(server['hostname'], addr, 'Disk', 'Warning', diskpercent)
+							elif data['disk']['total']['status'] == 2: alert(server['hostname'], addr, 'Disk', 'Critial', diskpercent)
+						if data['uptime']['status'] != 0:
+							if data['uptime']['status'] == 1: alert(server['hostname'], addr, 'Load', 'Warning', data['uptime']['load1'])
+							elif data['uptime']['status'] == 2: alert(server['hostname'], addr, 'Load', 'Critical', data['uptime']['load1'])
 
-					if data['disk']['total']['status'] != 0:
-						diskpercent = int(server['disk']['total']['used']) / int(server['disk']['total']['avail'])
-						if data['disk']['total']['status'] == 1: alert(server['hostname'], addr, 'Disk', 'Warning', diskpercent)
-						elif data['disk']['total']['status'] == 2: alert(server['hostname'], addr, 'Disk', 'Critial', diskpercent)
-					if data['uptime']['status'] != 0:
-						if data['uptime']['status'] == 1: alert(server['hostname'], addr, 'Load', 'Warning', data['uptime']['load1'])
-						elif data['uptime']['status'] == 2: alert(server['hostname'], addr, 'Load', 'Critical', data['uptime']['load1'])
-
-					# This should be done on a timer, but if I do that, I have to use another thread, which more than doubles the memory usage.
-					# So, instead, I'm going to do it whenever any other server updates.
-					checkServers()
+						# This should be done on a timer, but if I do that, I have to use another thread, which more than doubles the memory usage.
+						# So, instead, I'm going to do it whenever any other server updates.
+						checkServers()
 
 def main():
 	

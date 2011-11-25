@@ -27,7 +27,7 @@ critical = integer(min=0, default=1024)
 [disk]
 warning = integer(min=0, max=100, default=80)
 critical = integer(min=0, max=100, default=90)
-[network]
+[transfer]
 interface = string(default='eth0')
 """
 
@@ -52,17 +52,16 @@ if result != True:
 
 def getTransfer():
 	global config, logger
-	rp = os.popen("ifconfig %s | grep \"RX bytes\"" % (config['network']['interface']))
+	rp = os.popen("ifconfig %s | grep \"RX bytes\"" % (config['transfer']['interface']))
 	line = rp.readline()
-	words = line.strip().split(' ')
-	try:
+	if (line == ""):
+		logger.error("Interface for transfer accounting not found.")
+		return None
+	else:
+		words = line.strip().split(' ')
 		rx = words[1].split(':')[1]
 		tx = words[6].split(':')[1]
-	except:
-		logger.critical('Interface specified does not exist.')
-		logger.critical('Exiting...')
-		sys.exit(4)
-	return {"rx" : int(rx), "tx": int(tx)}
+		return {"rx" : int(rx), "tx": int(tx)}
 
 starttime = time.time()
 transferbytes = getTransfer()
@@ -331,10 +330,14 @@ def main():
 	while 1:
 
 		starttime = time.time()
-		transferbytes2 = getTransfer()
-		transferdiff = { "rx": int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime)), "tx": int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime)) }
-		transferbytes = transferbytes2
 		output = {}
+		
+		transferbytes2 = getTransfer()
+		if (transferbytes2 != None):
+			transferdiff = { "rx": int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime)), "tx": int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime)) }
+			transferbytes = transferbytes2
+			output['transfer'] = transferdiff
+
 		output['time'] = int(starttime)
 		output['hostname'] = getHostname()
 		output['ips'] = getIPs()
@@ -344,7 +347,7 @@ def main():
 		output['uptime'] = getUptime()
 		output['ram'] = getMem()
 		output['disk'] = getDisk()
-		output['transfer'] = transferdiff
+
 		if "commands" in config:
 			output['commands'] = checkCommands()
 

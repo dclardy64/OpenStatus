@@ -192,7 +192,7 @@ function memoryGraph($queryInfo, $uid = 0, $label) {
 		$myCache->writeToCache($ChartHash,$myPicture);
 	}
 
-	$myPicture->autoOutput($ChartHash, "cache/memory-".$queryInfo[4].".png");
+	$myPicture->autoOutput($ChartHash, "cache/".$info['uid']."/memory-".$queryInfo[4].".png");
 
 }
 
@@ -248,9 +248,10 @@ function loadavgGraph($queryInfo, $uid = 0, $label) {
 
 	}
 
-	$myPicture->autoOutput("cache/loadavg-".$queryInfo[4].".png");
+	$myPicture->autoOutput("cache/".$info['uid']."/loadavg-".$queryInfo[4].".png");
 
 }
+
 
 function transferGraph($queryInfo, $uid = 0, $label) {
 
@@ -324,7 +325,7 @@ function transferGraph($queryInfo, $uid = 0, $label) {
 
 	}
 
-	$myPicture->autoOutput("cache/transfer-".$queryInfo[4].".png");
+	$myPicture->autoOutput("cache/".$info['uid']."/transfer-".$queryInfo[4].".png");
 
 }
 
@@ -376,7 +377,7 @@ function diskGraph($queryInfo, $uid = 0, $label) {
 		$myCache->writeToCache($ChartHash,$myPicture);
 
 	}
-	$myPicture->autoOutput("cache/diskused-".$queryInfo[4].".png");
+	$myPicture->autoOutput("cache/".$info['uid']."/diskused-".$queryInfo[4].".png");
 
 }
 
