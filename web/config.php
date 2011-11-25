@@ -19,4 +19,5 @@ This file is part of the status project.
 	$db = '/etc/openstatus/openstatus.db';
 	$username = 'admin';
 	$password = 'password';
+
 ?>

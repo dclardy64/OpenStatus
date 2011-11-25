@@ -131,7 +131,7 @@ def alert(hostname, ip, module, level, value, setstatus = False):
 		if (setstatus == True):
 			sql.execute('UPDATE servers SET status = 0 WHERE uid = ?', (server['uid'], ))
 		title = "OpenStatus alert on server %s" % hostname
-		message = "A problem was detected with a server monitored by OpenStatus.  The details are. Server: %s Module: %s Alert Level: %s Value: %s" % (hostname, module, level, value)
+		message = "A problem was detected with a server monitored by OpenStatus. Server: %s Module: %s Alert Level: %s Value: %s" % (hostname, module, level, value)
 	
 		sendAlert(level, title, message)
 
@@ -272,15 +272,21 @@ def processData(data, addr):
 							for proc in data['procs']:
 								upd = (data['procs'][proc]['status'], server['uid'], data['procs'][proc]['name'])
 								sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-								if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, data['procs'][proc]['name'], "Warning", "Down")
-								elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, data['procs'][proc]['name'], "Critical", "Down")
+								sql.execute('SELECT COUNT(*) FROM processes WHERE uid = ? AND name = ?', (server['uid'], data['procs'][proc]['name']))
+								procexists = sql.fetchone()
+								if procexists[0] != 0:
+									if data['procs'][proc]['status'] == 1: alert(server['hostname'], addr, data['procs'][proc]['name'], "Warning", "Down")
+									elif data['procs'][proc]['status'] == 2: alert(server['hostname'], addr, data['procs'][proc]['name'], "Critical", "Down")
 						if "commands" in data:
 							for com in data['commands']:
 								# These are handled the same way as process checks because it makes it so much easier, and they're pretty much the same anyways
 								upd = (data['commands'][com]['status'], server['uid'], data['commands'][com]['name'])
 								sql.execute('UPDATE processes SET status = ? WHERE uid = ? AND name = ?', upd)
-								if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, data['commands'][com]['name'], "Warning", data['commands'][com]['value'])
-								elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, data['commands'][com]['name'], "Critical", data['commands'][com]['value'])
+								sql.execute('SELECT COUNT(*) FROM processes WHERE uid = ? AND name = ?', (server['uid'], data['procs'][proc]['name']))
+								procexists = sql.fetchone()
+								if procexists[0] != 0:
+									if data['commands'][com]['status'] == 1: alert(server['hostname'], addr, data['commands'][com]['name'], "Warning", data['commands'][com]['value'])
+									elif data['commands'][com]['status'] == 2: alert(server['hostname'], addr, data['commands'][com]['name'], "Critical", data['commands'][com]['value'])
 						if data['ram']['status'] != 0:
 							if data['ram']['status'] == 1: alert(server['hostname'], addr, 'Memory', 'Warning', data['ram']['used'])
 							elif data['ram']['status'] == 2: alert(server['hostname'], addr, 'Memory', 'Critical', data['ram']['used'])
