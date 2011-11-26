@@ -54,9 +54,9 @@
 		} else {
 			$mp = ($row['mused'])/$row['mtotal']*100;
 			$used = $row['mused'];
-			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div><br /><a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a></td>';
+			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div>';
 		}
-		echo '</td>';
+		echo '<br /><a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a></td>';
 		echo '<td class="5pad">';
 		if(isset($row['diskused'])) {
 			$mp = ($row['diskused']/$row['disktotal'])*100;
@@ -64,7 +64,7 @@
 		} else {
 			echo 'N/A';
 		}
-		echo '<a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a></td>';
+		echo '<br /><a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a></td>';
 		echo '<td class="5pad"><div style="display:block; margin: 3px; padding: 2px;">';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load1']).'">'. sprintf('%.02f', $row['load1']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load5']).'">'. sprintf('%.02f', $row['load5']) .'</span>&nbsp;';
