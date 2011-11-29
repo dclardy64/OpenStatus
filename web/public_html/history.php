@@ -29,14 +29,15 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 	echo '
 		<table style="border: 1;" id="servers">
 		<thead>
-			<tr><th colspan="6">Servers</th></tr>
+			<tr><th colspan="7">Servers</th></tr>
 			<tr>
 				<th scope="col">Name</th>
-				<th scope="col">Last Updated</th>
+				<th scope="col" style="width: 98px">Last Updated</th>
 				<th scope="col" style="width: 98px">Uptime</th>
 				<th scope="col" style="width: 98px">RAM</th>
 				<th scope="col" style="width: 98px">Disk</th>
 				<th scope="col" style="width: 98px">Load</th>
+				<th scope="col" style="width: 98px">Transfer</th> 
 			</tr>
 		</thead>
 			<tbody>';

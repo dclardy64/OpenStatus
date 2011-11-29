@@ -66,8 +66,8 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		<tr><th colspan="7">Servers</th></tr>
 		<tr>
 				<th scope="col">Name</th>
-				<th scope="col" style="width: 75px">Last Updated</th>
-				<th scope="col" style="width: 75px">Uptime</th>
+				<th scope="col" style="width: 98px">Last Updated</th>
+				<th scope="col" style="width: 98px">Uptime</th>
 				<th scope="col" style="width: 98px">RAM</th>
 				<th scope="col" style="width: 98px">Disk</th>
 				<th scope="col" style="width: 98px">Load</th>
