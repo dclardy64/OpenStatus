@@ -1,6 +1,12 @@
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:400,700);
 body {
-	font-family:Helvetica, Verdana, sans-serif;
+	font-family: "Open Sans", sans-serif;
 	margin: 0px;
+	font-weight: 400;
+}
+
+b, strong {
+	font-weight: 700;
 }
 
 h1 {

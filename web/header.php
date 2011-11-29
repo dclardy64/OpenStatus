@@ -1,7 +1,7 @@
 <?php
         require('config.php');
 
-	// Check if the database file has the proper permissions
+        // Check if the database file has the proper permissions
         $processUser = posix_geteuid();
         $processUserInfo = posix_getpwuid($processUser);
         $dbUser = fileowner($db);
@@ -149,7 +149,20 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
                 <link rel="stylesheet" href="/css/style.css"></link>
                 <script type="text/javascript" src="/js/jquery-1.6.4.min.js"></script>
                 <script tyle="text/javascript" src="/js/jquery.countdown.min.js"></script>
-		<script type="text/javascript" src="/js/jquery.lightbox-0.5.min.js"></script>
+                <script type="text/javascript" src="/js/jquery.lightbox-0.5.min.js"></script>
+                <script type="text/javascript">
+                (function(){
+                  // if firefox 3.5+, hide content till load (or 3 seconds) to prevent FOUT
+                  var d = document, e = d.documentElement, s = d.createElement('style');
+                  if (e.style.MozTransform === '') { // gecko 1.9.1 inference
+                    s.textContent = 'body{visibility:hidden}';
+                    e.firstChild.appendChild(s);
+                    function f(){ s.parentNode && s.parentNode.removeChild(s); }
+                    addEventListener('load',f,false);
+                    setTimeout(f,3000);
+                  }
+                })();
+                </script>
 <?php
 	if ($_SERVER['SCRIPT_NAME'] == '/index.php' || $_SERVER['SCRIPT_NAME'] == '/history.php') {
 		echo '<script type="text/javascript">
