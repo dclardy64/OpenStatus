@@ -105,7 +105,7 @@
 		echo '</tr>';
 		}
 		if ($row['note'] != "") {
-			echo '<tr><td colspan="5" style="text-align:left;"><strong>Notes: </strong>'.$row['note'].'</td></tr>';
+			echo '<tr><td colspan="6" style="text-align:left;"><strong>Notes: </strong>'.$row['note'].'</td></tr>';
 		}
 		$i++;
 		$lbjs .= "
