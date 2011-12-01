@@ -108,6 +108,7 @@ def sendAlert(level, subject, body):
 			receiver = config[levellower]['email']
 		msg = ("From: %s\rTo: %s\rSubject: %s\r\r%s" %(config['server']['email_from'], receiver, subject, body))
 		s = smtplib.SMTP('localhost')
+		sender = config['server']['email_from']
 		s.sendmail(sender, [receiver], msg)
 		s.quit()
 	elif config[levellower].has_key("type") and config[levellower]['type'] == "command":
