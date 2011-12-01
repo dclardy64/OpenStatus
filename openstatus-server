@@ -101,18 +101,28 @@ def daemonize(stdout, stderr, stdin, pidfile, startmsg = 'OpenStatus started wit
 def sendAlert(level, subject, body):
 	global config
 	levellower = level.lower()
-	if config[levellower].has_key("email") or (config[levellower].has_key("level") and config[levellower]['type'] == "email"):
+	if config[levellower].has_key("email") or config[levellower]['type'] == "email":
 		if config[levellower]['type'] == "email":
-			receiver = config[levellower]['arg']
+			receiver = config[levellower]['address']
 		else:
-			receiver = config[levellower()]['email']
+			receiver = config[levellower]['email']
 		msg = ("From: %s\rTo: %s\rSubject: %s\r\r%s" %(config['server']['email_from'], receiver, subject, body))
 		s = smtplib.SMTP('localhost')
 		s.sendmail(sender, [receiver], msg)
 		s.quit()
-	elif config[levellower].has_key("type") and config[levellower]['type'] == "external":
-		os.system('%s "%s"' % (config[levellower]['arg'], body))
-		
+	elif config[levellower].has_key("type") and config[levellower]['type'] == "command":
+		if config[levellower].has_key("sendbody") and config[levellower]["sendbody"] == "true":
+			os.system('%s "%s"' % (config[levellower]['command'], body))
+		else:
+			os.system('%s' % (config[levellower]['command']))
+	elif config[levellower].has_key("type") and config[levellower]['type'] == "net":
+		try:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((config[levellower]['ip'], int(config[levellower]['port'])))
+			s.sendall(body)
+			s.close()
+		except socket.error, (errno, strerror):
+			logger.warning('Could send alerrt to server %s:%d: %s' % (config[levellower]['ip'], config[levellower]['port'], strerror))
 def alert(hostname, ip, module, level, value, setstatus = False):
 
 	# Let's insert this alert into the database
@@ -298,6 +308,12 @@ def processData(data, addr):
 						if data['uptime']['status'] != 0:
 							if data['uptime']['status'] == 1: alert(server['hostname'], addr, 'Load', 'Warning', data['uptime']['load1'])
 							elif data['uptime']['status'] == 2: alert(server['hostname'], addr, 'Load', 'Critical', data['uptime']['load1'])
+						if data['transfer']['rx-status'] != 0:
+							if data['transfer']['rx-status'] == 1: alert(server['hostname'], addr, 'Transfer (RX)', 'Warning', data['transfer']['rx'])
+							elif data['transfer']['rx-status'] == 2: alert(server['hostname'], addr, 'Transfer (RX)', 'Critical', data['transfer']['rx'])
+						if data['transfer']['tx-status'] != 0:
+							if data['transfer']['tx-status'] == 1: alert(server['hostname'], addr, 'Transfer (TX)', 'Warning', data['transfer']['tx'])
+							elif data['transfer']['tx-status'] == 2: alert(server['hostname'], addr, 'Transfer (TX)', 'Critical', data['transfer']['tx'])
 
 						# This should be done on a timer, but if I do that, I have to use another thread, which more than doubles the memory usage.
 						# So, instead, I'm going to do it whenever any other server updates.

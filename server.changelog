@@ -4,8 +4,9 @@ openstatus-server (0.4.0) stable; urgency=low
   * Added graphing of historical data
   * Re-added "provider" field and grouping by provider
   * Switched from asyncore to twisted for asynchronous processing of requests
+  * Changed default font of web insterface
 
- -- Nick Moeck <nick@nickmoeck.com>  Wed, 23 Nov 2011 09:30:00 +0000
+ -- Nick Moeck <nick@nickmoeck.com  Wed, 30 Nov 2011 05:30:00 +0000
 
 openstatus-server (0.3.0) stable; urgency=low
 

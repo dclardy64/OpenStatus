@@ -334,7 +334,15 @@ def main():
 		
 		transferbytes2 = getTransfer()
 		if (transferbytes2 != None):
-			transferdiff = { "rx": int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime)), "tx": int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime)) }
+			rxdiff = int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime))
+			txdiff = int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime))
+			rxstatus = 0
+			txstatus = 0
+			if rxdiff > config['transfer']['rx-warning']: rxstatus += 1
+			if rxdiff > config['transfer']['rx-critical']: rxstatus += 1
+			if txdiff > config['transfer']['tx-warning']: txstatus += 1
+			if txdiff > config['transfer']['tx-critical']: txstatus += 1
+			transferdiff = { "rx": rxdiff, "tx": txdiff, "rx-status": rxstatus, "tx-status": txstatus }
 			transferbytes = transferbytes2
 			output['transfer'] = transferdiff
 
