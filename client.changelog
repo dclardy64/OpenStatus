@@ -2,7 +2,7 @@ openstatus-client (0.4.0) stable; urgency=low
 
   * Now sends bandwidth utilization
 
- -- Nick Moeck <nick@nickmoeck.com>  Wed, 30 Nov 2011 05:30:00 +0000
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 01 Dec 2011 07:30:00 +0000
 
 openstatus-client (0.3.2) stable; urgency=low
 

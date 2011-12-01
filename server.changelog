@@ -6,7 +6,7 @@ openstatus-server (0.4.0) stable; urgency=low
   * Switched from asyncore to twisted for asynchronous processing of requests
   * Changed default font of web insterface
 
- -- Nick Moeck <nick@nickmoeck.com  Wed, 30 Nov 2011 05:30:00 +0000
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 01 Dec 2011 07:30:00 +0000
 
 openstatus-server (0.3.0) stable; urgency=low
 
