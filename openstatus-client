@@ -334,8 +334,14 @@ def main():
 		
 		transferbytes2 = getTransfer()
 		if (transferbytes2 != None):
-			rxdiff = int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime))
-			txdiff = int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime))
+			if transferbytes2['rx'] < transferbytes['rx']:
+				rxdiff = int(((4294967295 - transferbytes['rx']) + transferbytes2['rx'])/(config['misc']['interval']-exectime))
+			else:
+				rxdiff = int((transferbytes2['rx']-transferbytes['rx'])/(config['misc']['interval']-exectime))
+			if transferbytes2['tx'] < transferbytes['tx']:
+				txdiff = int(((4294967295 - transferbytes['tx']) + transferbytes2['tx'])/(config['misc']['interval']-exectime))
+			else:
+				txdiff = int((transferbytes2['tx']-transferbytes['tx'])/(config['misc']['interval']-exectime))
 			rxstatus = 0
 			txstatus = 0
 			if rxdiff > config['transfer']['rx-warning']: rxstatus += 1
