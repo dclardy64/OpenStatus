@@ -1,3 +1,9 @@
+openstatus-server (0.4.1) stable; urgency=low
+
+  * Version bump to match client
+
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 15 Dec 2011 09:00:00 +0000
+
 openstatus-server (0.4.0) stable; urgency=low
 
   * Added storage of historical data

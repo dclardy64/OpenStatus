@@ -1,6 +1,6 @@
 <?php $end = microtime(); ?>
                         <div id="footer" class="clear">
-                                <p><a href="http://openstatus.nickmoeck.com">OpenStatus</a> v0.4.1 | Page generated in <?php echo round(($end - $start), 5); ?>s.</p>
+                                <p><a href="http://openstatus.nickmoeck.com">OpenStatus</a> v0.5.0 | Page generated in <?php echo round(($end - $start), 5); ?>s.</p>
                         </div>
                 </div>
 <script type="text/javascript">

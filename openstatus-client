@@ -16,6 +16,8 @@ logger.addHandler(ch)
 cfg = """
 [server]
 port = integer(min=1, max=65535, default=12999)
+[[__many__]]
+port = integer(min=1, max=65535, default=12999)
 [misc]
 interval = integer(min=1, default=60)
 [load]
@@ -31,7 +33,29 @@ critical = integer(min=0, max=100, default=90)
 interface = string(default='eth0')
 """
 
-configfile = '/etc/openstatus/openstatus-client.conf'
+debug = False
+
+try:
+	options, remainder = getopt.getopt(sys.argv[1:], 'dc:', ['debug',])
+except getopt.GetoptError:
+	print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
+	sys.exit(2)
+
+configfile = None
+for opt, args in options:
+	if opt in ('-d', '--debug'):
+		debug = True
+	elif opt in ('-c'):
+		if args in ('-d', '--debug'):
+			print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
+			sys.exit(2)
+		configfile = args
+
+if debug == True:
+	logger.setLevel(logging.DEBUG)
+
+if configfile == None:
+	configfile = '/etc/openstatus/openstatus-client.conf'
 
 try:
 	config = ConfigObj(configfile, file_error = True, configspec=cfg.split('\n'), list_values=False)
@@ -44,6 +68,7 @@ except (ConfigObjError, IOError), e:
 		logger.error('%s' % (e))
 		logger.error('Exiting...')
 		sys.exit(3)
+
 validator = Validator()
 result = config.validate(validator)
 if result != True:
@@ -79,27 +104,6 @@ except:
 	except ImportError:
 		logger.error('Could not import json module')
 		sys.exit(1)
-
-
-debug = False
-
-try:
-	options, remainder = getopt.getopt(sys.argv[1:], 'dc:', ['debug',])
-except getopt.GetoptError:
-	print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
-	sys.exit(2)
-
-for opt, args in options:
-	if opt in ('-d', '--debug'):
-		debug = True
-	elif opt in ('-c'):
-		if args in ('-d', '--debug'):
-			print "usage: ", sys.argv[0]," [-c configfile] [-d | --debug]"
-			sys.exit(2)
-		configfile = args
-
-if debug == True:
-	logger.setLevel(logging.DEBUG)
 
 # Let's make this a daemon... this is a very basic daemon fork, taken from: http://code.activestate.com/recipes/66012-fork-a-daemon-process-on-unix/#c9
 # Do the first fork
@@ -365,14 +369,29 @@ def main():
 		if "commands" in config:
 			output['commands'] = checkCommands()
 
-		try:
-			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			s.connect((config['server']['ip'], int(config['server']['port'])))
-			s.sendall(json.dumps(output))
-			logger.debug("JSON sent: %s", (json.dumps(output)))
-			s.close()
-		except socket.error, (errno, strerror):
-			logger.warning('Could not connect to server %s:%d: %s' % (config['server']['ip'], config['server']['port'], strerror))
+
+		if (config['server'].has_key('ip')):
+			try:
+				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				s.connect((config['server']['ip'], int(config['server']['port'])))
+				s.sendall(json.dumps(output))
+				logger.debug("JSON sent: %s", (json.dumps(output)))
+				s.close()
+			except socket.error, (errno, strerror):
+				logger.warning('Could not connect to server %s:%d: %s' % (config['server']['ip'], config['server']['port'], strerror))
+		else:
+			for srv in config['server']:
+				if (srv != "port" and srv != "ip"):
+					logger.debug("Connecting to server at %s, port %i" % (config['server'][srv]['ip'], config['server'][srv]['port']))
+					#sys.exit(0)
+					try:
+						s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+						s.connect((config['server'][srv]['ip'], int(config['server'][srv]['port'])))
+						s.sendall(json.dumps(output))
+						logger.warning("JSON sent to %s:%i : %s" % (config['server'][srv]['ip'], config['server'][srv]['port'], json.dumps(output)))
+						s.close()
+					except socket.error, (errno, strerror):
+						logger.warning('Could not connect to server %s:%d: %s' % (config['server'][srv]['ip'], config['server'][srv]['port'], strerror))
 		endtime = time.time()
 		exectime = endtime-starttime
 		time.sleep(float(config['misc']['interval']) - exectime)
