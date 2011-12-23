@@ -1,3 +1,9 @@
+openstatus-client (0.5.0) stable; urgency=low
+
+  * Added support for multiple servers
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 23 Dec 2011 03:00:00 +0000
+
 openstatus-client (0.4.1) stable; urgency=low
 
   * Fix rx/tx bytes when it rolls over in ifconfig
