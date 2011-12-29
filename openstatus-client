@@ -202,9 +202,9 @@ def checkCommands():
 		if com['type'] == 'integer':
 			# Check integer values
 			cstatus = 0
-			if int(co) > com['warning']:
+			if int(co) > int(com['warning']):
 				cstatus += 1;
-			if int(co) > com['critical']:
+			if int(co) > int(com['critical']):
 				cstatus += 1;
 			comstatus[com['name']] = { 'name' : com['name'], 'status': cstatus, 'value' : co }
 		elif com['type'] == 'string':
