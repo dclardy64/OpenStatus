@@ -1,3 +1,9 @@
+openstatus-client (0.5.1) stable; urgency=low
+
+  * Fixed bug in command processing for type "integer"
+
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 29 Dec 2011 10:45:00 +0000
+
 openstatus-client (0.5.0) stable; urgency=low
 
   * Added support for multiple servers

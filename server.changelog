@@ -1,3 +1,9 @@
+openstatus-server (0.5.1) stable; urgency=low
+
+  * Version bump to match client
+
+ -- Nick Moeck <nick@nickmoeck.com>  Thu, 29 Dec 2011 10:45:00 +0000
+
 openstatus-server (0.5.0) stable; urgency=low
 
   * Version bump to match client
