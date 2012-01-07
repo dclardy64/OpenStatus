@@ -157,8 +157,7 @@ def run(options=None):
         # print the number of regular upgrades and the number of 
         # security upgrades
         if options.show_regular_only:
-            sys.stderr.write("1")
-            #sys.stderr.write("%s" % (upgrades,))
+            sys.stderr.write("%s" % (upgrades,))
         elif options.show_security_only:
             sys.stderr.write("%s" % (security_updates,))
 	else:
