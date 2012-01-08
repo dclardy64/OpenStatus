@@ -1,5 +1,5 @@
 <?php
-        require('config.php');
+        require('/etc/openstatus/config.php');
 
         // Check if the database file has the proper permissions
         $processUser = posix_geteuid();
