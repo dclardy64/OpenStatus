@@ -1,3 +1,11 @@
+openstatus-server (0.6.0) stable; urgency=low
+
+  * Added "Acknowledge All" option for alerts
+  * Moved config.php to /etc to prevent clobbering during upgrades
+  * Web interface made "location agnostic"
+
+ -- Nick Moeck <nick@nickmoeck.com>  Sun, 08 Jan 2012 06:00:00 +0000
+
 openstatus-server (0.5.1) stable; urgency=low
 
   * Version bump to match client

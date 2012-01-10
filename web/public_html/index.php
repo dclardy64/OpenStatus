@@ -10,10 +10,18 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 
 	if ($auth === true) {
 		if (isset($_GET['ack'])) {
-			$ack = intval($_GET['ack']);
-			$ackq = $db->prepare('UPDATE alerts SET acked = 1 WHERE id = ?');
-			$ackq->execute(array($ack));
+			if ($_GET['ack'] == "all") {
+				$db->query('UPDATE alerts SET acked = 1');
+			} else {
+				$ack = intval($_GET['ack']);
+				$ackq = $db->prepare('UPDATE alerts SET acked = 1 WHERE id = ?');
+				$ackq->execute(array($ack));
+			}
 			header('Location: index.php');
+		} elseif (isset($_GET['ackall'])) {
+			$ack = intval($_GET['ackall']);
+			$ackq = $db->prepare('UPDATE alerts SET acked = 1 WHERE server_uid = ?');
+			$ackq->execute(array($ack));
 		}
 	}
 
@@ -55,6 +63,9 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 
 		}
 		if ($cq->fetchColumn() > 0) {
+			if ($auth == true) {
+				echo '<tr><td colspan="6"><a href="index.php?ack=all">Acknowledge All</a></td></tr>';
+			}
 			echo '</tbody>
 			</table>';
 		}

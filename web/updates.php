@@ -29,7 +29,7 @@ if (!isset($_GET['update'])) {
 		echo '
 			<table id="upgrade">
 				<tr><th>Upgrade</th></tr>
-				<tr><td>It looks like you\'ve upgraded OpenStatus from a previous version, and your database schema needs to be updated to enable new features.  <a href="/index.php?update=true">Click here</a> to run the database update.</td></tr>
+				<tr><td>It looks like you\'ve upgraded OpenStatus from a previous version, and your database schema needs to be updated to enable new features.  <a href="index.php?update=true">Click here</a> to run the database update.</td></tr>
 			</table>';
 	}
 } elseif (isset($_GET['update']) && $_GET['update'] == "true") {

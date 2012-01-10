@@ -1,4 +1,8 @@
 <?php
+
+	if (file_exists('/etc/openstatus/config.php') !== TRUE) {
+		die('Config file /etc/openstatus/config.php not found!');
+	}
         require('/etc/openstatus/config.php');
 
         // Check if the database file has the proper permissions
@@ -40,7 +44,7 @@
 		if ($servicecount[0] > 0) {
 			$numrows++;
 		}
-		echo '<td rowspan="'.$numrows.'"><a href="/history.php?uid='. $row['uid'].'">'. $row['hostname'] .'</a></td>';
+		echo '<td rowspan="'.$numrows.'"><a href="history.php?uid='. $row['uid'].'">'. $row['hostname'] .'</a></td>';
 
 		echo '<td><span id="time-'.$i.'"></span></td>';
 		$jsend .= '$(function () {
@@ -56,7 +60,7 @@
 			$used = $row['mused'];
 			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div>';
 		}
-		echo '<br /><a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a></td>';
+		echo '<br /><a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a></td>';
 		echo '<td class="5pad">';
 		if(isset($row['diskused'])) {
 			$mp = ($row['diskused']/$row['disktotal'])*100;
@@ -64,15 +68,15 @@
 		} else {
 			echo 'N/A';
 		}
-		echo '<br /><a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a></td>';
+		echo '<br /><a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a></td>';
 		echo '<td class="5pad"><div style="display:block; margin: 3px; padding: 2px;">';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load1']).'">'. sprintf('%.02f', $row['load1']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load5']).'">'. sprintf('%.02f', $row['load5']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load15']).'">'. sprintf('%.02f', $row['load15']) .'</span>&nbsp;';
-		echo '</div><a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1h" rel="lightbox-'.$row['uid'].'-load">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=3h" rel="lightbox-'.$row['uid'].'-load">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=6h" rel="lightbox-'.$row['uid'].'-load">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=12h" rel="lightbox-'.$row['uid'].'-load">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1d" rel="lightbox-'.$row['uid'].'-load">1d</a>';
+		echo '</div><a href="grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1h" rel="lightbox-'.$row['uid'].'-load">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=loadavg&interval=3h" rel="lightbox-'.$row['uid'].'-load">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=loadavg&interval=6h" rel="lightbox-'.$row['uid'].'-load">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=loadavg&interval=12h" rel="lightbox-'.$row['uid'].'-load">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=loadavg&interval=1d" rel="lightbox-'.$row['uid'].'-load">1d</a>';
 		echo '</td>';
 		echo '<td>Rx: '.format_bytes($row['rx']).'/s<br />Tx: '.format_bytes($row['tx']).'/s<br />';
-		echo '<a href="/grapher.php?uid='.$row['uid'].'&type=transfer&interval=1h" rel="lightbox-'.$row['uid'].'-transfer">1h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=transfer&interval=3h" rel="lightbox-'.$row['uid'].'-transfer">3h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=transfer&interval=6h" rel="lightbox-'.$row['uid'].'-transfer">6h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=transfer&interval=12h" rel="lightbox-'.$row['uid'].'-transfer">12h</a> <a href="/grapher.php?uid='.$row['uid'].'&type=transfer&interval=1d" rel="lightbox-'.$row['uid'].'-transfer">1d</a>';
+		echo '<a href="grapher.php?uid='.$row['uid'].'&type=transfer&interval=1h" rel="lightbox-'.$row['uid'].'-transfer">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=transfer&interval=3h" rel="lightbox-'.$row['uid'].'-transfer">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=transfer&interval=6h" rel="lightbox-'.$row['uid'].'-transfer">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=transfer&interval=12h" rel="lightbox-'.$row['uid'].'-transfer">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=transfer&interval=1d" rel="lightbox-'.$row['uid'].'-transfer">1d</a>';
 		echo '</td>';
 
 //		echo '<td>Rx: '.(round($row['rx']/1024, 2)).' KB/s<br />Tx: '.(round($row['tx']/1024, 2)).' KB/s</td>';
@@ -146,10 +150,10 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
         <head>
                 <meta charset="utf-8">
                 <title>OpenStatus - Server statistics</title>
-                <link rel="stylesheet" href="/css/style.css"></link>
-                <script type="text/javascript" src="/js/jquery-1.6.4.min.js"></script>
-                <script tyle="text/javascript" src="/js/jquery.countdown.min.js"></script>
-                <script type="text/javascript" src="/js/jquery.lightbox-0.5.min.js"></script>
+                <link rel="stylesheet" href="css/style.css"></link>
+                <script type="text/javascript" src="js/jquery-1.6.4.min.js"></script>
+                <script tyle="text/javascript" src="js/jquery.countdown.min.js"></script>
+                <script type="text/javascript" src="js/jquery.lightbox-0.5.min.js"></script>
                 <script type="text/javascript">
                 (function(){
                   // if firefox 3.5+, hide content till load (or 3 seconds) to prevent FOUT
@@ -164,7 +168,7 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
                 })();
                 </script>
 <?php
-	if ($_SERVER['SCRIPT_NAME'] == '/index.php' || $_SERVER['SCRIPT_NAME'] == '/history.php') {
+	if (substr($_SERVER['SCRIPT_NAME'], -10) == '/index.php' || substr($_SERVER['SCRIPT_NAME'], -12) == '/history.php') {
 		echo '<script type="text/javascript">
 			function reloader() { window.location.reload() }
 			refreshTimer = setInterval(\'reloader()\', 60000);
@@ -172,7 +176,7 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
 		';
 	}
 ?>
-		<link rel="stylesheet" type="text/css" href="/css/jquery.lightbox-0.5.css" media="screen" />
+		<link rel="stylesheet" type="text/css" href="css/jquery.lightbox-0.5.css" media="screen" />
         </head>
 	<body>
                 <div id="wrapper">
