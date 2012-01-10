@@ -20,6 +20,11 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 			$ackq = $db->prepare('UPDATE alerts SET acked = 1 WHERE id = ?');
 			$ackq->execute(array($ack));
 			header('Location: history.php?uid='.$server_uid);
+		} elseif (isset($_GET['ackall'])) {
+			$ack = intval($_GET['ackall']);
+			$ackq = $db->prepare('UPDATE alerts SET acked = 1 WHERE server_uid = ?');
+			$ackq->execute(array($ack));
+			header('Location: history.php?uid='.$server_uid);
 		}
 	}
 
@@ -61,7 +66,7 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		echo '<table style="border: 1;" id="alerts">
 			<thead>
 				<tr>
-					<th colspan="'.($auth === true ? '5' : '4').'">Alerts</th>
+					<th colspan="'.($auth === true ? '5' : '4').'">Alerts'.($auth === true ? ' - (<a href="history.php?ackall='.$server_uid.'&uid='.$server_uid.'">Acknowledge All</a>)' : '').'</th>
 				</tr>
 				<tr>
 					<th scope="col">Module</th>

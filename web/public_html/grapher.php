@@ -1,5 +1,5 @@
 <?php   
-require_once('../config.php');
+require_once('/etc/openstatus/config.php');
 
 try {
 	$db = new PDO('sqlite:'. $db);
