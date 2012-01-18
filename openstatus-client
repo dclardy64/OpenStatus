@@ -388,13 +388,17 @@ def main():
 						s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 						s.connect((config['server'][srv]['ip'], int(config['server'][srv]['port'])))
 						s.sendall(json.dumps(output))
-						logger.warning("JSON sent to %s:%i : %s" % (config['server'][srv]['ip'], config['server'][srv]['port'], json.dumps(output)))
+						logger.debug("JSON sent to %s:%i : %s" % (config['server'][srv]['ip'], config['server'][srv]['port'], json.dumps(output)))
 						s.close()
 					except socket.error, (errno, strerror):
 						logger.warning('Could not connect to server %s:%d: %s' % (config['server'][srv]['ip'], config['server'][srv]['port'], strerror))
 		endtime = time.time()
 		exectime = endtime-starttime
-		time.sleep(float(config['misc']['interval']) - exectime)
+		sleeptime = float(config['misc']['interval']) - exectime
+		if sleeptime > 0:
+			time.sleep(sleeptime)
+		else:
+			logger.warning("Sleep time is negative! Value: %d" % (sleeptime))
 
 if __name__ == "__main__":
 
