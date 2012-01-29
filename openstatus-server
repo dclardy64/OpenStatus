@@ -28,7 +28,7 @@ try:
 	import setproctitle
 	setproctitle.setproctitle('openstatus-server')
 except ImportError:
-	logger.warning('setproctitle not found')
+	logger.debug('setproctitle not found')
 try:       
 	import json
 except:

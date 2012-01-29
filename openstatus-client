@@ -95,7 +95,7 @@ try:
 	import setproctitle
 	setproctitle.setproctitle('openstatus-client')
 except ImportError:
-	logger.warning('setproctitle module not found')
+	logger.debug('setproctitle module not found')
 try:
 	import json
 except:
