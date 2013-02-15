@@ -227,7 +227,7 @@ def processData(data, addr):
 			else:
 				server = sql.fetchone()
 				if (server != None):
-					data['time'] = time.time()
+					data['time'] = int(time())
 					try:
 						ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
 					except KeyError, e:

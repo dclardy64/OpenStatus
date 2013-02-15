@@ -1,3 +1,21 @@
+openstatus-server (0.6.6) stable; urgency=low
+
+  * Convert time() to int
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 15 Feb 2013 23:35:00 +0000
+
+openstatus-server (0.6.5) stable; urgency=low
+
+  * I really should have tested that first... fixed time.time() to time()
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 15 Feb 2013 23:28:00 +0000
+
+openstatus-server (0.6.4) stable; urgency=low
+
+  * Version bump to fix repo problem
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 15 Feb 2013 23:15:00 +0000
+
 openstatus-server (0.6.3) stable; urgency=low
 
   * Don't rely on the timestamp given by clients
