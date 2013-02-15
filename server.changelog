@@ -1,3 +1,9 @@
+openstatus-server (0.6.3) stable; urgency=low
+
+  * Don't rely on the timestamp given by clients
+
+ -- Nick Moeck <nick@nickmoeck.com>  Fri, 15 Feb 2013 22:50:00 +0000
+
 openstatus-server (0.6.0) stable; urgency=low
 
   * Added "Acknowledge All" option for alerts
