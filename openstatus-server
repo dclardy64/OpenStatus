@@ -227,11 +227,13 @@ def processData(data, addr):
 			else:
 				server = sql.fetchone()
 				if (server != None):
+					data['time'] = time.time()
 					try:
 						ins = (data['time'], 1, data['uptime']['uptime'], data['ram']['total'], data['ram']['used'], data['ram']['free'], data['ram']['bufcac'], data['disk']['total']['total'], data['disk']['total']['used'], data['disk']['total']['avail'], data['uptime']['load1'], data['uptime']['load5'], data['uptime']['load15'], data['transfer']['rx'], data['transfer']['tx'], server['uid'])
 					except KeyError, e:
 						logger.error('Missing %s data from %s, ignoring...' % ( e, addr.host))
 					else:	
+						sql.execute('BEGIN TRANSACTION')
 						# Round down to the minute, 5 minute, and 10 minute intervals
 						roundedtime = int((data['time'] // 60) * 60)
 						roundedtime5 = int((data['time'] // 300) * 300)
@@ -315,7 +317,7 @@ def processData(data, addr):
 						if data['transfer']['tx-status'] != 0:
 							if data['transfer']['tx-status'] == 1: alert(server['hostname'], addr, 'Transfer (TX)', 'Warning', data['transfer']['tx'])
 							elif data['transfer']['tx-status'] == 2: alert(server['hostname'], addr, 'Transfer (TX)', 'Critical', data['transfer']['tx'])
-
+						sql.execute('END TRANSACTION')
 						# This should be done on a timer, but if I do that, I have to use another thread, which more than doubles the memory usage.
 						# So, instead, I'm going to do it whenever any other server updates.
 						checkServers()
