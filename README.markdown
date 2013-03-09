@@ -3,8 +3,25 @@
 OpenStatus is a server monitoring system based on [scrd](https://github.com/DimeCadmium/scrd) and nikkiii's [status page](https://github.com/nikkiii/status)
 
 ## Installation
-For Debian and its derivatives, see [this page](http://www.nickmoeck.com/openstatus/) for install instructions.  For other distros:
 
+### Debian
+
+Add the following repository to your /etc/apt/sources.list file:
+
+```deb http://deb.nickmoeck.com/debian/ stable main```
+
+Then download my key:
+
+```wget -O- http://deb.nickmoeck.com/debian/packages.gpg.key | apt-key add -```
+
+Then:
+
+``` apt-get update && apt-get install openstatus-server```
+
+Replace openstatus-server with openstatus-client for client machines.
+
+
+### Other distros
  - copy openstatus-server, the "web" directory, and openstatus.db to your server
  - copy openstatus-client to your clients
  - copy and edit the configuration files (default location is /etc/openstatus/)
