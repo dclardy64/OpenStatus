@@ -33,3 +33,19 @@ file.
   - openstatus-server -c \<config file\>
   - openstatus-client -c \<config file\>
   - \<config file\> defaults to /etc/openstatus/openstatus-[client|server].conf
+
+## Possible Problems
+### High Disk Usage
+If you're experiencing disk I/O problems with openstatus-server, it may be because the database has grown too large.  To alleviate this problem, you can delete some of the old data from the OpenStatus database file.
+Steps:
+ - Open the OpenStatus database with the ```sqlite3``` program (You may have to install it from your distro's repositories). 
+ - Run the following queries to delete history data from more than an hour ago: 
+   - ```DELETE FROM history WHERE time < ((SELECT strftime('%s','now') - 3600));```
+   - ```DELETE FROM history5 WHERE time < ((SELECT strftime('%s','now') - 3600));```
+   - ```DELETE FROM history10 WHERE time < ((SELECT strftime('%s','now') - 3600));```
+ - If you have a large number of alerts, you may wish to delete some old alerts as well.  The following query will do that:
+   - ```DELETE FROM alerts WHERE alert_time < ( (SELECT strftime('%s','now') - 3600));```
+ - Your database may not have proper indexes created.  Old versions of OpenStatus did not create any indexes, and they may not be created during updates.  The following indexes should help:
+   - ```CREATE INDEX history_index ON history (uid);```
+   - ```CREATE INDEX history_time_index ON history (time);```
+   - ```CREATE INDEX alert_index ON alerts (server_uid, alert_time, alert_acked);```
