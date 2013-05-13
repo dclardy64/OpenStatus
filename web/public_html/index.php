@@ -4,6 +4,8 @@ $requirelogin = false; // Change this to true if you want to require a valid use
 $alerts_require_login = false;
 require('../header.php');
 
+echo '<div class="container">';
+
 if (($auth === false && $requirelogin === false) || $auth === true) {
 
 	$jsend = '';
@@ -25,10 +27,6 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		}
 	}
 
-	echo '
-			<div class="stats_container" id="stats">';
-
-
 	if (($auth === true && $alerts_require_login === true) || ($requirelogin === false && $alerts_require_login === false)) {
 
 		$alert_query = $db->prepare('SELECT * FROM alerts LEFT OUTER JOIN servers ON alerts.server_uid = servers.uid WHERE acked = 0 ORDER BY alert_time ASC');
@@ -36,7 +34,7 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		$cq = $db->query('SELECT * FROM alerts WHERE acked = 0');
 
 		if ($cq->fetchColumn() > 0) {
-		echo '<table style="border: 1;" id="alerts">
+		echo '<table class="table table-bordered table-hover">
 			<thead>
 				<tr>
 					<th colspan="'.($auth === true ? '6' : '5').'">Alerts</th>
@@ -48,12 +46,9 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 					<th scope="col">Level</th>
 					<th scope="col">Value</th>';
 		if ($auth === true)
-			echo '		<th scope="col">Actions</th>';
+			echo '<th scope="col">Actions</th>';
 
-		echo '
-				</tr>
-			</thead>
-			<tbody>';
+			echo '</tr></thead><tbody>';
 		}
 		while ($alert = $alert_query->fetch(PDO::FETCH_ASSOC)) {
 			echo '<tr class="'.$alert['level'].'"><td>'.$alert['hostname'].'</td><td>'.$alert['module'].'</td><td id="alert-'.$alert['id'].'"></td><td>'.$alert['level'].'</td><td>'.$alert['value'].'</td>'.($auth === true ? '<td><a href="index.php?ack='.$alert['id'].'">Acknowledge</a></td>' : '').'</tr>';
@@ -72,20 +67,20 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 	}
 
 	echo '
-		<table style="border: 1;" id="servers">
+		<table class="table table-bordered table-hover">
 		<thead>
 		<tr><th colspan="7">Servers</th></tr>
 		<tr>
 				<th scope="col">Name</th>
-				<th scope="col" style="width: 98px">Last Updated</th>
-				<th scope="col" style="width: 98px">Uptime</th>
-				<th scope="col" style="width: 98px">RAM</th>
-				<th scope="col" style="width: 98px">Disk</th>
-				<th scope="col" style="width: 98px">Load</th>
-				<th scope="col" style="width: 98px">Transfer</th>
+				<th scope="col">Last Updated</th>
+				<th scope="col">Uptime</th>
+				<th scope="col">RAM</th>
+				<th scope="col">Disk</th>
+				<th scope="col">Load</th>
+				<th scope="col">Transfer</th>
 			</tr>
 		</thead>
-			<tbody>';
+		<tbody>';
 
 
 	$dbs = $db->prepare('SELECT * FROM servers WHERE disabled = 0 ORDER BY provider ASC, hostname ASC');
@@ -96,15 +91,18 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		statusRow($row);
 	}
 
-echo '
-			</tbody>
+echo '</tbody>
 	</table>
-			</div>
 			<script type="text/javascript">
 				'. $jsend .'
 			</script>';
 
 }
 
+echo '</div>';
+
+echo '<div id="push"></div>';
+
 require('../footer.php');
 ?>
+

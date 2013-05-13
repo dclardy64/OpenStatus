@@ -52,19 +52,21 @@
                         });';
 
 		echo '<td>'. $row['uptime'] .'</td>';
-		echo '<td class="5pad">';
+		echo '<td>';
 		if(empty($row['mtotal'])) {
 			echo "N/A";
 		} else {
 			$mp = ($row['mused'])/$row['mtotal']*100;
+			$classm = ( $mp > 70 ? ( $mp > 85 ? 'bar-danger' : 'bar-warning') : '');
 			$used = $row['mused'];
-			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div>';
+			echo '<div class="progress"><div class="bar '. $classm .'" style="width:'. $mp .'%"><div class="bartext">'. $used .'/'. $row['mtotal'] .'MB</div></div></div>';
 		}
 		echo '<br /><a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=1h" rel="lightbox-'.$row['uid'].'-memory">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=3h" rel="lightbox-'.$row['uid'].'-memory">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=6h" rel="lightbox-'.$row['uid'].'-memory">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=12h" rel="lightbox-'.$row['uid'].'-memory">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=memory&interval=1d" rel="lightbox-'.$row['uid'].'-memory">1d</a></td>';
 		echo '<td class="5pad">';
 		if(isset($row['diskused'])) {
 			$mp = ($row['diskused']/$row['disktotal'])*100;
-			echo '<div class="progress-container"><div class="progress-container-percent" style="width:'. $mp .'%"><div class="bartext">'. format_kbytes($row['diskused']) .'/'. format_kbytes($row['disktotal']) .'GB</div></div></div>';
+			$classd = ( $mp > 70 ? ( $mp > 85 ? 'bar-danger' : 'bar-warning') : '');
+			echo '<div class="progress"><div class="bar '. $classd .'" style="width:'. $mp .'%"><div class="bartext">'. format_kbytes($row['diskused']) .'/'. format_kbytes($row['disktotal']) .'GB</div></div></div>';
 		} else {
 			echo 'N/A';
 		}
@@ -86,7 +88,7 @@
 		$dbq = $db->prepare('SELECT * FROM processes WHERE uid = ? ORDER BY name ASC');
 		$dbr = $dbq->execute(array($row['uid']));
 		echo '<tr>';
-		echo '<td colspan="6" style="text-align: left; line-height: 22px;"><strong>Services:</strong><ul class="services">';
+		echo '<td colspan="6"><strong>Services:</strong><ul class="services">';
 		while ($service = $dbq->fetch(PDO::FETCH_ASSOC)) {
 			switch ($service['status']) {
 				case 0:
@@ -149,115 +151,115 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
 <html>
         <head>
                 <meta charset="utf-8">
-                <title>OpenStatus - Server statistics</title>
-                <link rel="stylesheet" href="css/style.css"></link>
-                <script type="text/javascript" src="js/jquery-1.6.4.min.js"></script>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>OpenStatus - Server Statistics</title>
+                <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+                <link href="css/bootstrap-responsive.min.css" rel="stylesheet"></link>
+                <link href="css/bootstrap-adds.css" rel="stylesheet"></link>
+                <script type="text/javascript" src="js/jquery.min.js"></script>
                 <script tyle="text/javascript" src="js/jquery.countdown.min.js"></script>
                 <script type="text/javascript" src="js/jquery.lightbox-0.5.min.js"></script>
-                <script type="text/javascript">
-                (function(){
-                  // if firefox 3.5+, hide content till load (or 3 seconds) to prevent FOUT
-                  var d = document, e = d.documentElement, s = d.createElement('style');
-                  if (e.style.MozTransform === '') { // gecko 1.9.1 inference
-                    s.textContent = 'body{visibility:hidden}';
-                    e.firstChild.appendChild(s);
-                    function f(){ s.parentNode && s.parentNode.removeChild(s); }
-                    addEventListener('load',f,false);
-                    setTimeout(f,3000);
-                  }
-                })();
-                </script>
-<?php
-	if (substr($_SERVER['SCRIPT_NAME'], -10) == '/index.php' || substr($_SERVER['SCRIPT_NAME'], -12) == '/history.php') {
-		echo '<script type="text/javascript">
-			function reloader() { window.location.reload() }
-			refreshTimer = setInterval(\'reloader()\', 60000);
-			</script>
-		';
-	}
-?>
-		<link rel="stylesheet" type="text/css" href="css/jquery.lightbox-0.5.css" media="screen" />
+                <script tyle="text/javascript" src="js/bootstrap.min.js"></script>
+				<?php
+					if (substr($_SERVER['SCRIPT_NAME'], -10) == '/index.php' || substr($_SERVER['SCRIPT_NAME'], -12) == '/history.php') {
+						echo '<script type="text/javascript">
+							function reloader() { window.location.reload() }
+							refreshTimer = setInterval(\'reloader()\', 60000);
+							</script>
+						';
+					}
+				?>
+				<link rel="stylesheet" type="text/css" href="css/jquery.lightbox-0.5.css" media="screen" />
         </head>
 	<body>
-                <div id="wrapper">
-                        <h1>Server statistics</h1>
-                        <ul id="menu">
-                                <li><a href="index.php">View Status</a></li>
-<?php
-if (isset($additional_links)) {
-	foreach ($additional_links as $link => $text) {
-		echo '<li><a href="'.$link.'">'.$text.'</a></li>';
-	}
-}
-?>
-                                <li><a href="admin.php">Admin</a></li>
-<?php
+		<div id="wrap">
+                <div class="navbar navbar-inverse navbar-fixed-top">
+                	<div class="navbar-inner">
+                		<div class="container">
+				          	<button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					            <span class="icon-bar"></span>
+					            <span class="icon-bar"></span>
+					            <span class="icon-bar"></span>
+				          	</button>
+                        	<a class="brand" href="/">Server Statistics</a>
+                        	<div class="nav-collapse collapse">
+	                        	<ul class="nav">
+	                                <li><a href="/">View Status</a></li>
+	                                <li><a href="/admin.php">Admin</a></li>
+									<?php
 
-if (isset($_GET['logout'])) {
-	setcookie('status-auth', '#');
-	$auth = false;
-	echo '</ul><p>You have been logged out.</p>';
-	require('footer.php');
-	die();
-}
-
-
-if (isset($_COOKIE['status-auth'])) {
-	$token = md5($username.$password);
-	if ($_COOKIE['status-auth'] === $token) {
-		$auth = true;
-	} else {
-		$auth = false;
-	}
-} else {
-	$auth = false;
-}
-
-if (isset($_POST['login'])) {
-        $token = md5($username.$password);
-	if (md5($_POST['username'].$_POST['password']) !== $token) {
-		echo '</ul><p>Invalid username or password.</p>';
-		$auth = false;
-	} else {
-		setcookie('status-auth', $token);
-		$auth = true;
-	}
-}
-
-if ($auth === true) {
-	echo '<li><a href="admin.php?logout">Log Out</a></li>';
-	echo '</ul>';
-} else { 
-	echo '</ul>';
-}
+									if (isset($_GET['logout'])) {
+										setcookie('status-auth', '#');
+										$auth = false;
+										echo '</ul></div></div></div></div><div class="container"><p>You have been logged out.</p></div>';
+										require('footer.php');
+										die();
+									}
 
 
-if ($auth === false && $requirelogin === true) {
-	echo '
-			<form action="admin.php" method="post">
-				<table>
-					<tr><th colspan="2">Please Log In</th></tr>
-					<tr>
-						<th>Username</th>
-						<td><input type="text" name="username" /></td>
-					</tr>
-					<tr>
-						<th>Password</th>
-						<td><input type="password" name="password" /></td>
-					</tr>
-					<tr><th colspan="2"><input type="submit" name="login" value="Log In" /></th></tr>
-				</table>
-			</form>';
-} else {
+									if (isset($_COOKIE['status-auth'])) {
+										$token = md5($username.$password);
+										if ($_COOKIE['status-auth'] === $token) {
+											$auth = true;
+										} else {
+											$auth = false;
+										}
+									} else {
+										$auth = false;
+									}
 
-        try {
-                $db = new PDO('sqlite:'. $db);
-        } catch (PDOException $e) {
-                error_log($_SERVER['SCRIPT_FILENAME'] .' - Unable to connect to the database: '. $e);
-                die('Unable to connect to the database - please try again later.');
-        }
-}
+									if (isset($_POST['login'])) {
+									        $token = md5($username.$password);
+										if (md5($_POST['username'].$_POST['password']) !== $token) {
+											echo '</ul></div></div></div></div><p>Invalid username or password.</p>';
+											$auth = false;
+										} else {
+											setcookie('status-auth', $token);
+											$auth = true;
+										}
+									}
 
-include 'updates.php';
+									if ($auth === true) {
+										echo '<li><a href="admin.php?logout">Log Out</a></li>';
+										echo '</ul></div></div></div></div>';
+									} else { 
+										echo '</ul></div></div></div></div>';
+									}
 
-?>
+									//Login Form Here
+									if ($auth === false && $requirelogin === true) {
+										echo '
+											<div class="container">
+												<form action="admin.php" method="post" id="login">
+													<table class="table">
+														<tr><th colspan="2">Please Log In</th></tr>
+														<tr>
+															<th>Username</th>
+															<td><input type="text" name="username" /></td>
+														</tr>
+														<tr>
+															<th>Password</th>
+															<td><input type="password" name="password" /></td>
+														</tr>
+														<tr><th colspan="2"><input type="submit" name="login" value="Log In" /></th></tr>
+													</table>
+												</form>
+											</div>';
+
+										echo '<div id="push"></div>';
+
+										require('../footer.php');
+
+									} else {
+
+									        try {
+									                $db = new PDO('sqlite:'. $db);
+									        } catch (PDOException $e) {
+									                error_log($_SERVER['SCRIPT_FILENAME'] .' - Unable to connect to the database: '. $e);
+									                die('Unable to connect to the database - please try again later.');
+									        }
+									}
+
+									include 'updates.php';
+
+									?>

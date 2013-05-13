@@ -1,10 +1,12 @@
 <?php
 $requirelogin = true;
+
 require('../header.php');
+
+echo '<div class="container">';
 
 if ($auth === true) {
 
-	echo '<div id="stats" class="stats_container">';
 
 	if (isset($_GET['delete-service']) && $_GET['delete-service'] == "true") {
 		$del = $db->prepare('DELETE FROM processes WHERE uid = ? AND name = ?');
@@ -39,6 +41,39 @@ if ($auth === true) {
 		echo '</table>';
 	}
 
+	if (isset($_GET['editserver'])) {
+		if (isset($_POST['serveredit'])) {
+			$updateh = $db->prepare('UPDATE servers set hostname = ? WHERE uid = ?');
+			$uph = $updateh->execute(array($_POST['new_hostname'], intval($_GET['editserver'])));
+			$updatei = $db->prepare('UPDATE servers set ip = ? WHERE uid = ?');
+			$upi = $updatei->execute(array($_POST['new_ip'], intval($_GET['editserver'])));
+			$updatep = $db->prepare('UPDATE servers set provider = ? WHERE uid = ?');
+			$upp = $updatep->execute(array($_POST['new_provider'], intval($_GET['editserver'])));
+			header('Location: admin.php');
+		}
+		echo '<table class="table table-bordered table-hover">';
+		$query = $db->prepare('SELECT * FROM servers WHERE uid = ?');
+		$query->execute(array(intval($_GET['editserver'])));
+		$server = $query->fetch(PDO::FETCH_ASSOC);
+		echo '<form action="admin.php?editserver='.$server['uid'].'" method="post">
+					<tr><th colspan="3">Edit Server: ' .$server['hostname']. '</th></tr>
+					<tr>
+						<th>Name</th>
+						<th>IP</th>
+						<th>Provider</th>
+				<tbody>
+					<tr>
+						<td><input type="name" name="new_hostname" style="width: 150px" value="' .$server['hostname'].'" /></td>
+						<td><input type="name" name="new_ip" style="width: 150px" value="' .$server['ip'].'" /></td>
+						<td><input type="name" name="new_provider" style="width: 150px" value="' .$server['provider'].'" /></td>
+					</tr>
+					<tr>
+						<td colspan="3"><input type="submit" name="serveredit" value="Edit Server" /></td>
+					</tr>
+				</tbody>
+		</table>';
+	}
+
 	if (isset($_POST['addservice'])) {
 		$query = $db->prepare('INSERT INTO `processes` (`uid`, `process`, `name`, `disabled`, `status`) VALUES (?, ?, ?, ?, ?)');
 		$q = $query->execute(array($_POST['uid'], $_POST['servicename'], $_POST['servicename'], 0, 1));
@@ -59,7 +94,7 @@ if ($auth === true) {
 	$i = 0;
 	$provider = '';
 	echo '
-		<table>
+		<table class="table table-bordered table-hover">
 		<thead>
 			<tr><th colspan="5">Servers</th></tr>
 			<tr>
@@ -81,21 +116,21 @@ if ($auth === true) {
 				<td>' .$row['hostname']. '</td><td>';
 		$dbq = $db->prepare('SELECT * FROM processes WHERE uid = ? ORDER BY name ASC');
 		$dbr = $dbq->execute(array($row['uid']));
-		echo '<table class="services" style="width: 100%">';
+		echo '<table class="table">';
 		while ($service = $dbq->fetch(PDO::FETCH_ASSOC)) {
 			echo '<tr><td>'. $service['name'] .'</td><td><a href="admin.php?delete-service=true&uid='.$service['uid'].'&name='.$service['name'].'">Delete</a></td></tr>';
 		}
 		echo '</table>';
 		echo '</td>
 				<td>'.$row['note'].'</td>
-				<td><a href="admin.php?editnote='.$row['uid'].'">Edit Notes</a> | <a href="admin.php?delete-server=true&uid='.$row['uid'].'">Delete Server</a></td>
+				<td><ul><li><a href="admin.php?editnote='.$row['uid'].'">Edit Notes</a></li><li><a href="admin.php?editserver='.$row['uid'].'">Edit Server</a></li><li><a href="admin.php?delete-server=true&uid='.$row['uid'].'">Delete Server</a></li></ul></td>
 			</tr>';
 	}
 	echo '
 		</table>';
 	echo '
 		<form action="admin.php?addserver" method="post">
-		<table>
+		<table class="table table-bordered table-hover">
 		<thead>
 			<tr><th colspan="3">Add Server</th></tr>
 			<tr>
@@ -119,7 +154,7 @@ if ($auth === true) {
 
 	echo '
 		<form action="admin.php?addservice" method="post">
-		<table>
+		<table class="table table-bordered table-hover">
 		<thead>
 			<tr><th colspan="2">Add Service</th></tr>
 			<tr>
@@ -149,6 +184,10 @@ if ($auth === true) {
 		</form>';
 	echo '</div>';
 }
+
+echo '</div>';
+
+echo '<div id="push"></div>';
 
 require('../footer.php');
 ?>

@@ -10,6 +10,8 @@ $requirelogin = false; // Change this to true if you want to require a valid use
 $alerts_require_login = false; // Change this to true if you want to require a login to view alerts
 require('../header.php');
 
+echo '<div class="container">';
+
 $server_uid = intval($_GET['uid']);
 
 if (($auth === false && $requirelogin === false) || $auth === true) {
@@ -29,10 +31,7 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 	}
 
 	echo '
-			<div class="stats_container" id="stats">';
-
-	echo '
-		<table style="border: 1;" id="servers">
+		<table class="table table-bordered table-hover">
 		<thead>
 			<tr><th colspan="7">Servers</th></tr>
 			<tr>
@@ -63,7 +62,7 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 		$alert_query = $db->prepare('SELECT * FROM alerts WHERE server_uid = ? ORDER BY alert_time DESC');
 		$alert_query->execute(array($server_uid));
 
-		echo '<table style="border: 1;" id="alerts">
+		echo '<table class="table table-bordered table-hover">
 			<thead>
 				<tr>
 					<th colspan="'.($auth === true ? '5' : '4').'">Alerts'.($auth === true ? ' - (<a href="history.php?ackall='.$server_uid.'&uid='.$server_uid.'">Acknowledge All</a>)' : '').'</th>
@@ -105,6 +104,10 @@ if (($auth === false && $requirelogin === false) || $auth === true) {
 				</script>';
 
 }
+
+echo '</div>';
+
+echo '<div id="push"></div>';
 
 require('../footer.php');
 ?>
