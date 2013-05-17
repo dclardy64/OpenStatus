@@ -71,7 +71,7 @@
 			echo 'N/A';
 		}
 		echo '<br /><a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=1h" rel="lightbox-'.$row['uid'].'-disk">1h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=3h" rel="lightbox-'.$row['uid'].'-disk">3h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=6h" rel="lightbox-'.$row['uid'].'-disk">6h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=12h" rel="lightbox-'.$row['uid'].'-disk">12h</a> <a href="grapher.php?uid='.$row['uid'].'&type=disk&interval=1d" rel="lightbox-'.$row['uid'].'-disk">1d</a></td>';
-		echo '<td class="5pad"><div style="display:block; margin: 3px; padding: 2px;">';
+		echo '<td><div style="display:block; margin: 3px; padding: 2px;">';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load1']).'">'. sprintf('%.02f', $row['load1']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load5']).'">'. sprintf('%.02f', $row['load5']) .'</span>&nbsp;';
 		echo '<span class="loadavg" style="background-color: #'.gen_color($row['load15']).'">'. sprintf('%.02f', $row['load15']) .'</span>&nbsp;';
@@ -191,7 +191,7 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
 									if (isset($_GET['logout'])) {
 										setcookie('status-auth', '#');
 										$auth = false;
-										echo '</ul></div></div></div></div><div class="container"><p>You have been logged out.</p></div>';
+										echo '</ul></div></div></div></div><div class="container"><p class="text-center">You have been logged out.</p></div>';
 										require('footer.php');
 										die();
 									}

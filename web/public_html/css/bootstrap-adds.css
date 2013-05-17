@@ -68,3 +68,11 @@ html, body {
 .progress {
 	margin-bottom: 0;
 }
+
+.table td {
+   text-align: center;   
+}
+
+.table td a{
+	padding-left: 5px;
+}

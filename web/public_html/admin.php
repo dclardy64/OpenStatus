@@ -31,7 +31,7 @@ if ($auth === true) {
 			$update->execute(array($_POST['note'], intval($_GET['editnote'])));
 			header('Location: admin.php');
 		}
-		echo '<table style="width: 600px">';
+		echo '<table class="table table-bordered table-hover">';
 		$query = $db->prepare('SELECT * FROM servers WHERE uid = ?');
 		$query->execute(array(intval($_GET['editnote'])));
 		$server = $query->fetch(PDO::FETCH_ASSOC);
