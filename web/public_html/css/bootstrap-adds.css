@@ -54,10 +54,6 @@ html, body {
     color: d;
 }
 
-.progress {
-	position: relative;
-}
-
 .loadavg {
 	-moz-border-radius: 5px;
 	border-radius: 5px;
@@ -66,6 +62,7 @@ html, body {
 }
 
 .progress {
+	position: relative;
 	margin-bottom: 0;
 }
 
@@ -76,3 +73,25 @@ html, body {
 .table td a{
 	padding-left: 5px;
 }
+
+td.service-list {
+	text-align: left;
+}
+
+ul.services {
+        list-style: none;
+        display: inline-block;
+        text-align: left;
+        margin-bottom: 0px;
+}
+
+.services li {
+        display: inline-block;
+        margin: 5px 5px 0 5px;
+        padding: 2px 5px;
+}
+
+li.service-up { color:#468847;background-color:#dff0d8;border-color:#d6e9c6; }
+li.service-warning { color:#c09853;background-color:#fcf8e3;border-color:#fbeed5; }
+li.service-critical { color:#b94a48;background-color:#f2dede;border-color:#eed3d7; }
+li.service-unknown { color:#3a87ad;background-color:#d9edf7;border-color:#bce8f1; }

@@ -88,7 +88,7 @@
 		$dbq = $db->prepare('SELECT * FROM processes WHERE uid = ? ORDER BY name ASC');
 		$dbr = $dbq->execute(array($row['uid']));
 		echo '<tr>';
-		echo '<td colspan="6"><strong>Services:</strong><ul class="services">';
+		echo '<td class="service-list" colspan="6"><strong>Services:</strong><ul class="services">';
 		while ($service = $dbq->fetch(PDO::FETCH_ASSOC)) {
 			switch ($service['status']) {
 				case 0:
