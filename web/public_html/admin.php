@@ -102,7 +102,7 @@ if ($auth === true) {
 				<th style="width: 100px">Name</th>
 				<th style="width: 150px">Services</th>
 				<th>Notes</th>
-				<th style="width: 100px">Actions</th>
+				<th style="width: 150px">Actions</th>
 			</tr>
 		</thead>';
 	while ($row = $dbs->fetch(PDO::FETCH_ASSOC)) {
