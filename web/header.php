@@ -208,10 +208,18 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
 										$auth = false;
 									}
 
+									if ($auth === true) {
+										echo '<li><a href="admin.php?logout">Log Out</a></li>';
+									} else { 
+										
+									}
+
+									echo '</ul></div></div></div></div><div class="container">';
+
 									if (isset($_POST['login'])) {
 									        $token = md5($username.$password);
 										if (md5($_POST['username'].$_POST['password']) !== $token) {
-											echo '</ul></div></div></div></div><p>Invalid username or password.</p>';
+											echo '<p class="warning">Invalid username or password.</p>';
 											$auth = false;
 										} else {
 											setcookie('status-auth', $token);
@@ -219,31 +227,22 @@ $(function() { $('a[rel=lightbox-".$row['uid']."-transfer]').lightBox({fixedNavi
 										}
 									}
 
-									if ($auth === true) {
-										echo '<li><a href="admin.php?logout">Log Out</a></li>';
-										echo '</ul></div></div></div></div>';
-									} else { 
-										echo '</ul></div></div></div></div>';
-									}
-
 									//Login Form Here
 									if ($auth === false && $requirelogin === true) {
-										echo '
-											<div class="container">
-												<form action="admin.php" method="post" id="login">
-													<table class="table">
-														<tr><th colspan="2">Please Log In</th></tr>
-														<tr>
-															<th>Username</th>
-															<td><input type="text" name="username" /></td>
-														</tr>
-														<tr>
-															<th>Password</th>
-															<td><input type="password" name="password" /></td>
-														</tr>
-														<tr><th colspan="2"><input type="submit" name="login" value="Log In" /></th></tr>
-													</table>
-												</form>
+										echo '<form action="admin.php" method="post" id="login">
+												<table class="table">
+													<tr><th colspan="2">Please Log In</th></tr>
+													<tr>
+														<th>Username</th>
+														<td><input type="text" name="username" /></td>
+													</tr>
+													<tr>
+														<th>Password</th>
+														<td><input type="password" name="password" /></td>
+													</tr>
+													<tr><th colspan="2"><input type="submit" name="login" value="Log In" /></th></tr>
+												</table>
+											 </form>
 											</div>';
 
 										echo '<div id="push"></div>';
